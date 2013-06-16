@@ -1,6 +1,10 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
+#include "Camera.h"
+#include "Scene.h"
+#include "RayTracer.h"
+
 #include <windows.h>
 #include <GL/GL.h>
 #include <GL/GLU.h>
@@ -48,13 +52,19 @@ private:
 	HGLRC mOpenGLRenderingContextHandle;
 	unsigned int mTextureId;
 	unsigned int mPBOId;
+	Camera* mpCamera;
+	Scene* mpScene;
+	RayTracer* mpRayTracer;
+	bool mRunRayTracing;
+	double mLastRayTracingTime;
 	
 	Application();
 	~Application();
 
 	void InitializeOpenGL();
 	void CreateBuffers();
-	void PaintWindow();
+	void RunRayTracing();
+	void RepaintWindow();
 	WNDCLASSEX CreateWindowClass();
 
 };

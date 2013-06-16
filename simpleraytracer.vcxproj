@@ -65,10 +65,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\RayTracer.cpp" />
+    <ClCompile Include="src\Vector3F.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
+    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\DirectionalLight.h" />
     <ClInclude Include="src\glext.h" />
+    <ClInclude Include="src\Light.h" />
+    <ClInclude Include="src\Material.h" />
+    <ClInclude Include="src\Matrix3x3F.h" />
+    <ClInclude Include="src\PointLight.h" />
+    <ClInclude Include="src\Ray.h" />
+    <ClInclude Include="src\RayHit.h" />
+    <ClInclude Include="src\Scene.h" />
+    <ClInclude Include="src\SceneObject.h" />
+    <ClInclude Include="src\RayTracer.h" />
+    <ClInclude Include="src\Sphere.h" />
+    <ClInclude Include="src\Time.h" />
+    <ClInclude Include="src\Vector2F.h" />
+    <ClInclude Include="src\Vector3F.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

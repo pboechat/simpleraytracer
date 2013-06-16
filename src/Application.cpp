@@ -1,4 +1,8 @@
 #include "Application.h"
+#include "Time.h"
+
+#include "Sphere.h"
+#include "PointLight.h"
 
 #include <iostream>
 #include <string>
@@ -43,13 +47,27 @@ Application* Application::s_mpInstance = 0;
 	} \
 
 //////////////////////////////////////////////////////////////////////////
-Application::Application()
+Application::Application() :
+	mRunning(false),
+	mApplicationHandle(0),
+	mWindowHandle(0),
+	mDeviceContextHandle(0),
+	mPixelFormat(0),
+	mOpenGLRenderingContextHandle(0),
+	mTextureId(0),
+	mPBOId(0),
+	mpCamera(0),
+	mpScene(0),
+	mpRayTracer(0),
+	mRunRayTracing(true),
+	mLastRayTracingTime(0)
 {
 	s_mpInstance = this;
 }
 
 //////////////////////////////////////////////////////////////////////////
 Application::~Application()
+	
 {
 	s_mpInstance = 0;
 }
@@ -115,10 +133,26 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	InitializeOpenGL();
 	CreateBuffers();
 
+	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 0), Vector3F(0, 0, -1), Vector3F(0, 1, 0));
+
+	Sphere* pSphere = new Sphere(Vector3F(0, 0, -5), 1);
+	pSphere->material.diffuseColor = Color3F(1, 0, 0);
+	pSphere->material.shininess = 5.0f;
+
+	PointLight* pPointLight = new PointLight();
+	pPointLight->position = Vector3F(1, 0, -3);
+
+	mpScene = new Scene();
+	mpScene->AddLight(pPointLight);
+	mpScene->AddSceneObject(pSphere);
+
+	mpRayTracer = new RayTracer(mpCamera, mpScene);
+	
 	mRunning = true;
 	MSG message;
 	while (mRunning)
 	{
+
 		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
 		{
 			if (message.message == WM_QUIT)
@@ -135,9 +169,21 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		else
 		{
-			PaintWindow();
+			if (mRunRayTracing && Time::Now() - mLastRayTracingTime > 0.333f)
+			{
+				RunRayTracing();
+
+				mRunRayTracing = false;
+				mLastRayTracingTime = Time::Now();
+			}
+
+			RepaintWindow();
 		}
 	}
+
+	delete mpRayTracer;
+	delete mpScene;
+	delete mpCamera;
 
 	glDeleteTextures(1, &mTextureId);
 	glDeleteBuffersARB(1, &mPBOId);
@@ -179,30 +225,18 @@ void Application::InitializeOpenGL()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::PaintWindow()
+void Application::RepaintWindow()
 {
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-	unsigned char* pColorBuffer = (unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-
-	for(int i = 0; i < COLOR_BUFFER_SIZE; i += 4)
-	{
-		pColorBuffer[i] = 0;
-		pColorBuffer[i + 1] = 0;
-		pColorBuffer[i + 2] = 255;
-		pColorBuffer[i + 3] = 255;
-	}
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
+	// TODO: improve
 	glBegin(GL_QUADS);
 	glNormal3f(0, 0, 1);
 		glTexCoord2f(0.0f, 0.0f);   
@@ -221,6 +255,18 @@ void Application::PaintWindow()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void Application::RunRayTracing()
+{
+	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
+	unsigned char* pColorBuffer = (unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+
+	mpRayTracer->Render(pColorBuffer);
+
+	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application application;
@@ -235,7 +281,18 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
-
+	case WM_KEYDOWN:
+		if (wParam == VK_F5)
+		{
+			Application::s_mpInstance->mRunRayTracing = true;
+		}
+		break;
+	case WM_KEYUP:
+		if (wParam == VK_F5)
+		{
+			Application::s_mpInstance->mRunRayTracing = false;
+		}
+		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
