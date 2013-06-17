@@ -49,6 +49,21 @@ public:
 		return mHeight;
 	}
 
+	inline float GetNear() const
+	{
+		return mNear;
+	}
+
+	inline float GetFar() const
+	{
+		return mFar;
+	}
+
+	inline const Vector3F& GetEyePosition() const
+	{
+		return mEyePosition;
+	}
+
 	inline Ray CastRay(unsigned int x, unsigned int y) const
 	{
 		Vector3F direction = (-mNear * mZ) + (mProjectionPlaneHeight * ((float)y / (float)mHeight - 0.5f) * mY) + (mProjectionPlaneWidth * ((float)x / (float)mWidth - 0.5f) * mX);

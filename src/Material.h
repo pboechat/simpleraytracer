@@ -11,7 +11,7 @@ struct Material
 	float shininess;
 
 	Material() :
-		ambientColor(1, 1, 1),
+		ambientColor(0, 0, 0),
 		diffuseColor(1, 1, 1),
 		specularColor(1, 1, 1),
 		shininess(1)

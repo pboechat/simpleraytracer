@@ -40,6 +40,7 @@ private:
 	static const unsigned int HAS_ALPHA;
 	static const unsigned int BYTES_PER_PIXEL;
 	static const unsigned int COLOR_BUFFER_SIZE;
+	static const unsigned int DEPTH_BUFFER_SIZE;
 	static const PIXELFORMATDESCRIPTOR PIXEL_FORMAT_DESCRIPTOR;
 
 	static Application* s_mpInstance;
@@ -55,6 +56,9 @@ private:
 	Camera* mpCamera;
 	Scene* mpScene;
 	RayTracer* mpRayTracer;
+	bool mPBOSupported;
+	unsigned char* mpImageData;
+	float* mpDepthBuffer;
 	bool mRunRayTracing;
 	double mLastRayTracingTime;
 	

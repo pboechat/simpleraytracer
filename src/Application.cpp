@@ -7,6 +7,9 @@
 #include "PointLight.h"
 
 #include <iostream>
+#include <stdio.h>
+#include <io.h>
+#include <fcntl.h>
 #include <string>
 
 const char* Application::WINDOW_TITLE = "simpleraytracer";
@@ -17,7 +20,8 @@ const unsigned int Application::COLOR_BUFFER_BITS = 32;
 const unsigned int Application::DEPTH_BUFFER_BITS = 32;
 const unsigned int Application::HAS_ALPHA = 0;
 const unsigned int Application::BYTES_PER_PIXEL = 4;
-const unsigned int Application::COLOR_BUFFER_SIZE = WINDOW_WIDTH * WINDOW_HEIGHT * BYTES_PER_PIXEL;
+const unsigned int Application::DEPTH_BUFFER_SIZE = WINDOW_WIDTH * WINDOW_HEIGHT;
+const unsigned int Application::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * BYTES_PER_PIXEL;
 const PIXELFORMATDESCRIPTOR Application::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
 
 #ifdef _WIN32
@@ -61,6 +65,9 @@ Application::Application() :
 	mpCamera(0),
 	mpScene(0),
 	mpRayTracer(0),
+	mPBOSupported(false),
+	mpImageData(0),
+	mpDepthBuffer(0),
 	mRunRayTracing(true),
 	mLastRayTracingTime(0)
 {
@@ -76,8 +83,6 @@ Application::~Application()
 
 void Application::CreateBuffers()
 {
-	bool PBOSupported = false;
-
 #ifdef _WIN32
 	glGenBuffersARB = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffersARB");
 	glBindBufferARB = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBufferARB");
@@ -90,16 +95,27 @@ void Application::CreateBuffers()
 
 	if(glGenBuffersARB && glBindBufferARB && glBufferDataARB && glBufferSubDataARB && glMapBufferARB && glUnmapBufferARB && glDeleteBuffersARB && glGetBufferParameterivARB)
 	{
-		PBOSupported = true;
+		mPBOSupported = true;
 	}
 #else
 	// TODO:
 #endif
 
-	if (!PBOSupported)
+	if (mPBOSupported)
 	{
-		// TODO:
+		glGenBuffersARB(1, &mPBOId);
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		mpImageData = 0;
 	}
+	else
+	{
+		mpImageData = new unsigned char[COLOR_BUFFER_SIZE];
+		memset(mpImageData, 0, sizeof(unsigned char) * COLOR_BUFFER_SIZE);
+	}
+
+	mpDepthBuffer = new float[DEPTH_BUFFER_SIZE];
 
 	glGenTextures(1, &mTextureId);
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
@@ -107,13 +123,8 @@ void Application::CreateBuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)mpImageData);
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenBuffersARB(1, &mPBOId);
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -135,24 +146,26 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	InitializeOpenGL();
 	CreateBuffers();
 
-	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 5), Vector3F(0, 0, -1), Vector3F(0, 1, 0));
+	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 0), Vector3F(0.342f, 0, -0.939f), Vector3F(0, 1, 0));
 
 	mpScene = new Scene();
 
-	Sphere* pSphere = new Sphere(Vector3F(2, 0, 0), 1);
-	pSphere->material.diffuseColor = Color3F(1, 0, 0);
+	Sphere* pSphere = new Sphere(Vector3F(0, 0, -9), 0.5f);
+	pSphere->material.ambientColor = Color3F(0.2f, 0, 0);
+	pSphere->material.diffuseColor = Color3F(0.8f, 0, 0);
 	pSphere->material.shininess = 5;
 	mpScene->AddSceneObject(pSphere);
 
 	Mesh* pMesh = new Mesh();
 
-	pMesh->material.diffuseColor = Color3F(0, 0, 1);
+	pMesh->material.ambientColor = Color3F(0, 0, 0.2f);
+	pMesh->material.diffuseColor = Color3F(0, 0, 0.8f);
 	pMesh->material.shininess = 5;
 
-	pMesh->vertices.push_back(Vector3F(1, 1, 0));
-	pMesh->vertices.push_back(Vector3F(-1, 1, 0));
-	pMesh->vertices.push_back(Vector3F(-1, -1, 0));
-	pMesh->vertices.push_back(Vector3F(1, -1, 0));
+	pMesh->vertices.push_back(Vector3F(1, 1, -10));
+	pMesh->vertices.push_back(Vector3F(-1, 1, -10));
+	pMesh->vertices.push_back(Vector3F(-1, -1, -10));
+	pMesh->vertices.push_back(Vector3F(1, -1, -10));
 
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
@@ -171,10 +184,14 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	//ModelLoader::LoadObj("models/CornellBox.obj", *mpScene);
 
 	PointLight* pPointLight = new PointLight();
-	pPointLight->position = Vector3F(1, 0, 1);
+	pPointLight->position = Vector3F(0.3f, 0, -7);
 	mpScene->AddLight(pPointLight);
 
-	mpRayTracer = new RayTracer(mpCamera, mpScene);
+	pPointLight = new PointLight();
+	pPointLight->position = Vector3F(-0.3f, 0, -6);
+	mpScene->AddLight(pPointLight);
+
+	mpRayTracer = new RayTracer(mpCamera, mpScene, Vector3F(0, 0, 0), Vector3F(0.5f, 0.5f, 0.5f));
 	
 	mRunning = true;
 	MSG message;
@@ -256,10 +273,13 @@ void Application::InitializeOpenGL()
 void Application::RepaintWindow()
 {
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	if (mPBOSupported)
+	{
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+	}
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpImageData);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -285,13 +305,33 @@ void Application::RepaintWindow()
 //////////////////////////////////////////////////////////////////////////
 void Application::RunRayTracing()
 {
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-	unsigned char* pColorBuffer = (unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindTexture(GL_TEXTURE_2D, mTextureId);
+	if (mPBOSupported)
+	{
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+	}
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpImageData);
 
-	mpRayTracer->Render(pColorBuffer);
+	memset(mpDepthBuffer, static_cast<int>(mpCamera->GetFar()), sizeof(float) * DEPTH_BUFFER_SIZE);
 
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+	if (mPBOSupported)
+	{
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
+		unsigned char* pColorBuffer = (unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+
+		if (pColorBuffer != 0)
+		{
+			mpRayTracer->Render(pColorBuffer, mpDepthBuffer);
+			glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+		}
+
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+	}
+	else
+	{
+		mpRayTracer->Render(mpImageData, mpDepthBuffer);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
