@@ -2,11 +2,13 @@
 #define RAYHIT_H_
 
 #include "Vector3F.h"
+#include "Vector2F.h"
 
 struct RayHit
 {
 	Vector3F point;
 	Vector3F normal;
+	Vector2F uv;
 
 	RayHit()
 	{

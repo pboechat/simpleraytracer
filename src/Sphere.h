@@ -3,9 +3,8 @@
 
 #include "SceneObject.h"
 
-class Sphere : public SceneObject
+struct Sphere : public SceneObject
 {
-public:
 	Vector3F center;
 	float radius;
 
@@ -19,7 +18,7 @@ public:
 	{
 	}
 
-	virtual bool Intersect(const Ray& rRay, RayHit& rHit)
+	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const
 	{
 		Vector3F viewerDirection = rRay.origin - center;
 

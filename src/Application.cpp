@@ -2,6 +2,8 @@
 #include "Time.h"
 
 #include "Sphere.h"
+#include "Mesh.h"
+#include "ModelLoader.h"
 #include "PointLight.h"
 
 #include <iostream>
@@ -120,7 +122,7 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	mApplicationHandle = hInstance;
 
 	CHECK_WINAPI_SUCCESS(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
-	CHECK_WINAPI_SUCCESS((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT, NULL, NULL, hInstance, NULL)), "CreateWindow failed");
+	CHECK_WINAPI_SUCCESS((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT, NULL, NULL, hInstance, NULL)), "CreateWindow failed");
 	CHECK_WINAPI_SUCCESS((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
 	CHECK_WINAPI_SUCCESS((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
 	CHECK_WINAPI_SUCCESS(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
@@ -133,18 +135,44 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	InitializeOpenGL();
 	CreateBuffers();
 
-	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 0), Vector3F(0, 0, -1), Vector3F(0, 1, 0));
-
-	Sphere* pSphere = new Sphere(Vector3F(0, 0, -5), 1);
-	pSphere->material.diffuseColor = Color3F(1, 0, 0);
-	pSphere->material.shininess = 5.0f;
-
-	PointLight* pPointLight = new PointLight();
-	pPointLight->position = Vector3F(1, 0, -3);
+	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 5), Vector3F(0, 0, -1), Vector3F(0, 1, 0));
 
 	mpScene = new Scene();
-	mpScene->AddLight(pPointLight);
+
+	Sphere* pSphere = new Sphere(Vector3F(2, 0, 0), 1);
+	pSphere->material.diffuseColor = Color3F(1, 0, 0);
+	pSphere->material.shininess = 5;
 	mpScene->AddSceneObject(pSphere);
+
+	Mesh* pMesh = new Mesh();
+
+	pMesh->material.diffuseColor = Color3F(0, 0, 1);
+	pMesh->material.shininess = 5;
+
+	pMesh->vertices.push_back(Vector3F(1, 1, 0));
+	pMesh->vertices.push_back(Vector3F(-1, 1, 0));
+	pMesh->vertices.push_back(Vector3F(-1, -1, 0));
+	pMesh->vertices.push_back(Vector3F(1, -1, 0));
+
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+
+	pMesh->indices.push_back(0);
+	pMesh->indices.push_back(1);
+	pMesh->indices.push_back(2);
+	pMesh->indices.push_back(0);
+	pMesh->indices.push_back(2);
+	pMesh->indices.push_back(3);
+
+	mpScene->AddSceneObject(pMesh);
+
+	//ModelLoader::LoadObj("models/CornellBox.obj", *mpScene);
+
+	PointLight* pPointLight = new PointLight();
+	pPointLight->position = Vector3F(1, 0, 1);
+	mpScene->AddLight(pPointLight);
 
 	mpRayTracer = new RayTracer(mpCamera, mpScene);
 	

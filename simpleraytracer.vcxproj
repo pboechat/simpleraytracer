@@ -66,6 +66,8 @@
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\RayTracer.cpp" />
+    <ClCompile Include="src\TinyObjLoader.cpp" />
+    <ClCompile Include="src\Vector2F.cpp" />
     <ClCompile Include="src\Vector3F.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -76,6 +78,8 @@
     <ClInclude Include="src\Light.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\Matrix3x3F.h" />
+    <ClInclude Include="src\Mesh.h" />
+    <ClInclude Include="src\ModelLoader.h" />
     <ClInclude Include="src\PointLight.h" />
     <ClInclude Include="src\Ray.h" />
     <ClInclude Include="src\RayHit.h" />
@@ -84,6 +88,7 @@
     <ClInclude Include="src\RayTracer.h" />
     <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="src\Time.h" />
+    <ClInclude Include="src\TinyObjLoader.h" />
     <ClInclude Include="src\Vector2F.h" />
     <ClInclude Include="src\Vector3F.h" />
   </ItemGroup>

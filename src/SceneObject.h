@@ -10,12 +10,11 @@
 
 #include <math.h>
 
-class SceneObject
+struct SceneObject
 {
-public:
 	Material material;
 
-	virtual bool Intersect(const Ray& rRay, RayHit& rHit) = 0;
+	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const = 0;
 
 };
 
