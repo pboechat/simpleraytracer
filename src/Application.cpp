@@ -207,6 +207,7 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	pSphere->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
 	pSphere->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
 	pSphere->material.shininess = 5;
+	pSphere->material.renderAttributes.transparent = true;
 	mpScene->AddSceneObject(pSphere);
 
 	pSphere = new Sphere(Vector3F(2, -0.5f, -4.5f), 0.333f);
@@ -216,7 +217,7 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	pSphere->material.texture = TextureLoader::LoadFromPNG("textures/Ball.png");
 	mpScene->AddSceneObject(pSphere);
 
-	pSphere = new Sphere(Vector3F(1, -1, -3), 0.5f);
+	pSphere = new Sphere(Vector3F(1.5f, -1, -3), 0.5f);
 	pSphere->material.ambientColor = ColorRGBA(0.2f, 0, 0, 1);
 	pSphere->material.diffuseColor = ColorRGBA(0.8f, 0, 0, 1);
 	pSphere->material.shininess = 5;
