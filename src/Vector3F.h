@@ -68,7 +68,7 @@ struct Vector3F
 	{
 		x *= rOther.x;
 		y *= rOther.y;
-		z *= rOther.y;
+		z *= rOther.z;
 
 		return *this;
 	}
@@ -160,7 +160,7 @@ struct Vector3F
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	inline float Distance(const Vector3F& rOther)
+	inline float Distance(const Vector3F& rOther) const
 	{
 		float x1 = rOther.x - x;
 		float y1 = rOther.y - y;
@@ -210,6 +210,12 @@ struct Vector3F
 						x * rOther.y - y * rOther.x);
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	inline float Angle(const Vector3F& rOther) const
+	{
+		return acos(Dot(rOther) / (Length() * rOther.Length()));
+	}
+
 };
 
 Vector3F operator + (float scalar, const Vector3F& rVector);
@@ -217,7 +223,5 @@ Vector3F operator - (float scalar, const Vector3F& rVector);
 Vector3F operator * (float scalar, const Vector3F& rVector);
 Vector3F operator / (float scalar, const Vector3F& rVector);
 Vector3F operator - (const Vector3F& rVector);
-
-typedef Vector3F Color3F;
 
 #endif

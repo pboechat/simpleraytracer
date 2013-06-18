@@ -4,121 +4,193 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "Material.h"
+#include "Matrix3x3F.h"
 
 #include <cmath>
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
-#define clamp(vector, vmin, vmax) \
-	vector.x = ((vector.x < (vmin)) ? (vmin) : ((vector.x > (vmax)) ? (vmax) : vector.x)); \
-	vector.y = ((vector.y < (vmin)) ? (vmin) : ((vector.y > (vmax)) ? (vmax) : vector.y)); \
-	vector.z = ((vector.z < (vmin)) ? (vmin) : ((vector.z > (vmax)) ? (vmax) : vector.z))
+#define clamp(v, vmin, vmax) \
+	(v).r = (((v).r < (vmin)) ? (vmin) : (((v).r > (vmax)) ? (vmax) : (v).r)); \
+	(v).g = (((v).g < (vmin)) ? (vmin) : (((v).g > (vmax)) ? (vmax) : (v).g)); \
+	(v).b = (((v).b < (vmin)) ? (vmin) : (((v).b > (vmax)) ? (vmax) : (v).b)); \
+	(v).a = (((v).a < (vmin)) ? (vmin) : (((v).a > (vmax)) ? (vmax) : (v).a))
 
-#define writeToColorBuffer(colorBuffer, i, color) \
-	(colorBuffer)[(i)] = (unsigned char)(color.x * 255.0f); \
-	(colorBuffer)[(i) + 1] = (unsigned char)(color.y * 255.0f); \
-	(colorBuffer)[(i) + 2] = (unsigned char)(color.z * 255.0f); \
+#define set(colorBuffer, i, c) \
+	(colorBuffer)[(i)] = static_cast<unsigned char>((c).r * 255.0); \
+	(colorBuffer)[(i) + 1] = static_cast<unsigned char>((c).g * 255.0); \
+	(colorBuffer)[(i) + 2] = static_cast<unsigned char>((c).b * 255.0); \
 	(colorBuffer)[(i) + 3] = 255
 
-RayTracer::RayTracer(const Camera* pCamera, const Scene* pScene, const Vector3F& rClearColor, const Vector3F& rAmbientLight) :
+#define get(colorBuffer, i, c) \
+	(c).r = (colorBuffer)[(i)] / 255.0f; \
+	(c).g = (colorBuffer)[(i) + 1] / 255.0f; \
+	(c).b = (colorBuffer)[(i) + 2] / 255.0f; \
+	(c).a = (colorBuffer)[(i) + 3] / 255.0f
+
+//////////////////////////////////////////////////////////////////////////
+RayTracer::RayTracer(const Camera* pCamera, const Scene* pScene, const ColorRGBA& rClearColor, const ColorRGBA& rAmbientLight) :
 	mpCamera(pCamera),
 	mpScene(pScene),
-	mClearColor(rClearColor),
+	mBackgroundColor(rClearColor),
 	mAmbientLight(rAmbientLight)
 {
 }
 
+//////////////////////////////////////////////////////////////////////////
 RayTracer::~RayTracer()
 {
 }
 
+//////////////////////////////////////////////////////////////////////////
 void RayTracer::Render(unsigned char* pColorBuffer, float* pDepthBuffer)
 {
-	for (unsigned int y = 0, c = 0, d = 0; y < mpCamera->GetHeight(); y++)
+	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0; y < mpCamera->GetHeight(); y++)
 	{
-		for (unsigned int x = 0; x < mpCamera->GetWidth(); x++, c += 4, d++)
+		for (unsigned int x = 0; x < mpCamera->GetWidth(); x++, colorBufferIndex += 4, depthBufferIndex++)
 		{
-			Ray& rRay = mpCamera->CastRay(x, y);
+			Ray& rRay = mpCamera->GetRayFromScreenCoordinates(x, y);
 
-			writeToColorBuffer(pColorBuffer, c, mClearColor);
-
-			for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
-			{
-				SceneObject* pSceneObject = mpScene->GetSceneObject(i);
-
-				RayHit hit;
-				
-				if (pSceneObject->Intersect(rRay, hit))
-				{
-					float distanceToPoint = rRay.origin.Distance(hit.point);
-
-					if (distanceToPoint >= pDepthBuffer[d])
-					{
-						continue;
-					}
-					
-					pDepthBuffer[d] = distanceToPoint;
-
-					Color3F color = mAmbientLight * pSceneObject->material.ambientColor;
-
-					Vector3F viewerDirection = (rRay.origin - hit.point).Normalized();
-					Vector3F& rNormal = hit.normal;
-
-					for (unsigned int j = 0; j < mpScene->NumberOfLights(); j++)
-					{
-						Light* pLight = mpScene->GetLight(j);
-
-						PointLight* pPointLight;
-						
-						Vector3F lightDirection;
-						if ((pPointLight = static_cast<PointLight*>(pLight)) != 0)
-						{
-							lightDirection = (pPointLight->position - hit.point).Normalized();
-						}
-						else
-						{
-							// FIXME: rotate according to view
-							lightDirection = static_cast<DirectionalLight*>(pLight)->direction;
-						}
-
-						float distanceToLight;
-						if (pPointLight == 0)
-						{
-							distanceToLight = -1;
-						}
-						else 
-						{
-							distanceToLight = pPointLight->position.Distance(hit.point);
-						}
-
-						Ray shadowRay(hit.point, lightDirection);
-						if (UnderShadow(shadowRay, distanceToLight, pSceneObject))
-						{
-							continue;
-						}
-
-						Color3F colorContribution = BlinnPhong(pSceneObject->material, *pLight, lightDirection, viewerDirection, rNormal);
-
-						if (pPointLight != 0)
-						{
-							float distanceAttenuation = 1.0f / max(pPointLight->attenuation * (distanceToLight * distanceToLight), 1);
-							colorContribution *= distanceAttenuation;
-						}
-
-						color += colorContribution;
-					}
-
-					clamp(color, 0, 1);
-
-					writeToColorBuffer(pColorBuffer, c, color);
-				}
-			}
+			ColorRGBA color;
+			color = Trace(rRay, &pDepthBuffer[depthBufferIndex]);
+			set(pColorBuffer, colorBufferIndex, color);
 		}
 	}
 }
 
-bool RayTracer::UnderShadow(const Ray& rShadowRay, float distanceToLight, SceneObject* pOriginSceneObject)
+//////////////////////////////////////////////////////////////////////////
+ColorRGBA RayTracer::Trace(const Ray& rRay, float* pCurrentDepth, SceneObject* pIgnoreSceneObject) const
+{
+	ColorRGBA finalColor = mBackgroundColor;
+
+	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
+	{
+		SceneObject* pSceneObject = mpScene->GetSceneObject(i);
+
+		if (pIgnoreSceneObject != 0 && pSceneObject == pIgnoreSceneObject)
+		{
+			continue;
+		}
+
+		RayHit hit;
+		if (pSceneObject->Intersect(rRay, hit))
+		{
+			float depth = rRay.origin.Distance(hit.point);
+
+			if (depth >= *pCurrentDepth)
+			{
+				continue;
+			}
+
+			*pCurrentDepth = depth;
+
+			ColorRGBA currentColor = Shade(pSceneObject, rRay, hit);
+
+			if (pSceneObject->material.renderAttributes.transparent)
+			{
+				finalColor = currentColor.Blend(finalColor);
+			}
+			else
+			{
+				finalColor = currentColor;
+			}
+		}
+	}
+
+	return finalColor;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const RayHit& rHit) const
+{
+	Material& rMaterial = pSceneObject->material;
+
+	ColorRGBA color = mAmbientLight * rMaterial.ambientColor;
+
+	Vector3F viewerDirection = (rRay.origin - rHit.point).Normalized();
+	const Vector3F& rNormal = rHit.normal;
+
+	for (unsigned int j = 0; j < mpScene->NumberOfLights(); j++)
+	{
+		Light* pLight = mpScene->GetLight(j);
+
+		PointLight* pPointLight;
+
+		Vector3F lightDirection;
+		if ((pPointLight = static_cast<PointLight*>(pLight)) != 0)
+		{
+			lightDirection = (pPointLight->position - rHit.point).Normalized();
+		}
+		else
+		{
+			// FIXME: rotate according to view
+			lightDirection = static_cast<DirectionalLight*>(pLight)->direction;
+		}
+
+		float distanceToLight;
+		if (pPointLight == 0)
+		{
+			distanceToLight = -1;
+		}
+		else 
+		{
+			distanceToLight = pPointLight->position.Distance(rHit.point);
+		}
+
+		Ray shadowRay(rHit.point, lightDirection);
+		if (IsLightBlocked(shadowRay, distanceToLight, pSceneObject))
+		{
+			continue;
+		}
+
+		ColorRGBA diffuseColor = rMaterial.diffuseColor;
+		if (rMaterial.texture != 0)
+		{
+			diffuseColor *= rMaterial.texture->Fetch(rHit.uv);
+		}
+
+		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *pLight, lightDirection, viewerDirection, rNormal);
+
+		if (pPointLight != 0)
+		{
+			float distanceAttenuation = 1.0f / max(pPointLight->attenuation * (distanceToLight * distanceToLight), 1);
+			colorContribution *= distanceAttenuation;
+		}
+
+		color += colorContribution;
+	}
+
+	if (rMaterial.renderAttributes.reflectionCoeficient > 0)
+	{
+		Vector3F reflectionDirection = (-viewerDirection).Reflection(rNormal).Normalized();
+		Ray reflectionRay(rHit.point, reflectionDirection);
+		float newDepth = mpCamera->GetFar();
+		color += rMaterial.renderAttributes.reflectionCoeficient * Trace(reflectionRay, &newDepth, pSceneObject);
+	}
+
+	if (rMaterial.renderAttributes.refractionIndex > 0)
+	{
+		Vector3F& rVt = viewerDirection.Dot(rNormal) * rNormal - viewerDirection;
+		float sinI = rVt.Length();
+		float sinT = rMaterial.renderAttributes.refractionIndex * sinI;
+		float cosT = sqrt(1.0f - (sinT * sinT));
+		Vector3F& rT = (1.0f / rVt.Length()) * rVt;
+		Vector3F& rRefractionDirection = sinT * rT + cosT * (-rNormal);
+
+		Ray refractionRay(rHit.point, rRefractionDirection);
+		float newDepth = mpCamera->GetFar();
+		color = color.Blend(Trace(refractionRay, &newDepth, pSceneObject));
+	}
+
+	clamp(color, 0, 1);
+
+	return color;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool RayTracer::IsLightBlocked(const Ray& rShadowRay, float distanceToLight, SceneObject* pOriginSceneObject) const
 {
 	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
 	{
@@ -146,18 +218,19 @@ bool RayTracer::UnderShadow(const Ray& rShadowRay, float distanceToLight, SceneO
 	return false;
 }
 
-Color3F RayTracer::BlinnPhong(const Material& rMaterial, const Light& rLight, const Vector3F& rLightDirection, const Vector3F& rViewerDirection, const Vector3F& rNormal) const
+//////////////////////////////////////////////////////////////////////////
+ColorRGBA RayTracer::BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const ColorRGBA& rMaterialSpecularColor, float materialShininess, const Light& rLight, const Vector3F& rLightDirection, const Vector3F& rViewerDirection, const Vector3F& rNormal) const
 {
 	float diffuseAttenuation = max(rNormal.Dot(rViewerDirection), 0);
 
-	Color3F diffuseContribution = rLight.intensity * rLight.diffuseColor * rMaterial.diffuseColor * diffuseAttenuation;
+	ColorRGBA diffuseContribution = rLight.intensity * rLight.diffuseColor * rMaterialDiffuseColor * diffuseAttenuation;
 	
-	Color3F specularContribution;
+	ColorRGBA specularContribution;
 	if (diffuseAttenuation > 0)
 	{
-		Vector3F reflection = (-rLightDirection).Reflection(rNormal).Normalized();
-		float specularAttenuation = pow(max(reflection.Dot(rViewerDirection), 0), rMaterial.shininess);
-		specularContribution = rLight.intensity * rLight.specularColor * rMaterial.specularColor * specularAttenuation;
+		Vector3F lightReflectionDirection = (-rLightDirection).Reflection(rNormal).Normalized();
+		float specularAttenuation = pow(max(lightReflectionDirection.Dot(rViewerDirection), 0), materialShininess);
+		specularContribution = rLight.intensity * rLight.specularColor * rMaterialSpecularColor * specularAttenuation;
 	}
 
 	return (diffuseContribution + specularContribution);

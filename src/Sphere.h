@@ -3,6 +3,10 @@
 
 #include "SceneObject.h"
 
+#include <cmath>
+
+#define PI 3.14159265359f
+
 struct Sphere : public SceneObject
 {
 	Vector3F center;
@@ -48,6 +52,10 @@ struct Sphere : public SceneObject
 
 		rHit.point = rRay.origin + (t * rRay.direction);
 		rHit.normal = (rHit.point - center).Normalized();
+
+		// Spherical Mapping with Normals:
+		// http://www.mvps.org/directx/articles/spheremap.htm
+		rHit.uv = Vector2F(asin(rHit.normal.x) / PI + 0.5f, asin(rHit.normal.y) / PI + 0.5f);
 
 		return true;
 	}

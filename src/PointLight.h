@@ -15,7 +15,7 @@ public:
 	{
 	}
 
-	PointLight(const Color3F& rDiffuseColor, const Color3F& rSpecularColor, float intensity, const Vector3F& rPosition, float attenuation) :
+	PointLight(const ColorRGBA& rDiffuseColor, const ColorRGBA& rSpecularColor, float intensity, const Vector3F& rPosition, float attenuation) :
 	  Light(rDiffuseColor, rSpecularColor, intensity)
 	{
 		position = rPosition;

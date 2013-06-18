@@ -8,7 +8,7 @@ class DirectionalLight : public Light
 public:
 	Vector3F direction;
 
-	DirectionalLight(const Color3F& rDiffuseColor, const Color3F& rSpecularColor, float intensity, const Vector3F& rDirection) :
+	DirectionalLight(const ColorRGBA& rDiffuseColor, const ColorRGBA& rSpecularColor, float intensity, const Vector3F& rDirection) :
 		Light(rDiffuseColor, rSpecularColor, intensity)
 	{
 		direction = rDirection;

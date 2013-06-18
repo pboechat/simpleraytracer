@@ -45,8 +45,8 @@ struct ModelLoader
 	}
 
 private:
-	ModelLoader();
-	~ModelLoader();
+	ModelLoader() {}
+	~ModelLoader() {}
 
 };
 

@@ -64,7 +64,7 @@ public:
 		return mEyePosition;
 	}
 
-	inline Ray CastRay(unsigned int x, unsigned int y) const
+	inline Ray GetRayFromScreenCoordinates(unsigned int x, unsigned int y) const
 	{
 		Vector3F direction = (-mNear * mZ) + (mProjectionPlaneHeight * ((float)y / (float)mHeight - 0.5f) * mY) + (mProjectionPlaneWidth * ((float)x / (float)mWidth - 0.5f) * mX);
 		return Ray(mEyePosition, direction);

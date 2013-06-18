@@ -1,10 +1,13 @@
 #include "Application.h"
 #include "Time.h"
 
+#include "Vector3F.h"
+#include "ColorRGBA.h"
 #include "Sphere.h"
 #include "Mesh.h"
 #include "ModelLoader.h"
 #include "PointLight.h"
+#include "TextureLoader.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -150,48 +153,84 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	mpScene = new Scene();
 
-	Sphere* pSphere = new Sphere(Vector3F(0, 0, -9), 0.5f);
-	pSphere->material.ambientColor = Color3F(0.2f, 0, 0);
-	pSphere->material.diffuseColor = Color3F(0.8f, 0, 0);
-	pSphere->material.shininess = 5;
-	mpScene->AddSceneObject(pSphere);
-
 	Mesh* pMesh = new Mesh();
-
-	pMesh->material.ambientColor = Color3F(0, 0, 0.2f);
-	pMesh->material.diffuseColor = Color3F(0, 0, 0.8f);
+	pMesh->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
+	pMesh->material.diffuseColor = ColorRGBA(0.8f, 0.8f, 0.8f, 1);
 	pMesh->material.shininess = 5;
-
-	pMesh->vertices.push_back(Vector3F(1, 1, -10));
-	pMesh->vertices.push_back(Vector3F(-1, 1, -10));
-	pMesh->vertices.push_back(Vector3F(-1, -1, -10));
-	pMesh->vertices.push_back(Vector3F(1, -1, -10));
-
+	pMesh->material.texture = TextureLoader::LoadFromPNG("textures/Brick.png");
+	pMesh->vertices.push_back(Vector3F(-1, -2, -6));
+	pMesh->vertices.push_back(Vector3F(1, -2, -6));
+	pMesh->vertices.push_back(Vector3F(1, 0, -6));
+	pMesh->vertices.push_back(Vector3F(-1, 0, -6));
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
 	pMesh->normals.push_back(Vector3F(0, 0, 1));
-
+	pMesh->uvs.push_back(Vector2F(0, 0));
+	pMesh->uvs.push_back(Vector2F(1, 0));
+	pMesh->uvs.push_back(Vector2F(1, 1));
+	pMesh->uvs.push_back(Vector2F(0, 1));
 	pMesh->indices.push_back(0);
 	pMesh->indices.push_back(1);
 	pMesh->indices.push_back(2);
 	pMesh->indices.push_back(0);
 	pMesh->indices.push_back(2);
 	pMesh->indices.push_back(3);
-
 	mpScene->AddSceneObject(pMesh);
 
-	//ModelLoader::LoadObj("models/CornellBox.obj", *mpScene);
+	pMesh = new Mesh();
+	pMesh->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
+	pMesh->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
+	pMesh->material.shininess = 5;
+	pMesh->material.renderAttributes.reflectionCoeficient = 0.5f;
+	pMesh->vertices.push_back(Vector3F(1, -2, -6));
+	pMesh->vertices.push_back(Vector3F(3, -2, -6));
+	pMesh->vertices.push_back(Vector3F(3, 0, -6));
+	pMesh->vertices.push_back(Vector3F(1, 0, -6));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->normals.push_back(Vector3F(0, 0, 1));
+	pMesh->uvs.push_back(Vector2F(0, 0));
+	pMesh->uvs.push_back(Vector2F(1, 0));
+	pMesh->uvs.push_back(Vector2F(1, 1));
+	pMesh->uvs.push_back(Vector2F(0, 1));
+	pMesh->indices.push_back(0);
+	pMesh->indices.push_back(1);
+	pMesh->indices.push_back(2);
+	pMesh->indices.push_back(0);
+	pMesh->indices.push_back(2);
+	pMesh->indices.push_back(3);
+	mpScene->AddSceneObject(pMesh);
+
+	Sphere* pSphere = new Sphere(Vector3F(-0.5, -1, -5), 0.5f);
+	pSphere->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
+	pSphere->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
+	pSphere->material.shininess = 5;
+	mpScene->AddSceneObject(pSphere);
+
+	pSphere = new Sphere(Vector3F(2, -0.5f, -4.5f), 0.333f);
+	pSphere->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
+	pSphere->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
+	pSphere->material.shininess = 5;
+	pSphere->material.texture = TextureLoader::LoadFromPNG("textures/Ball.png");
+	mpScene->AddSceneObject(pSphere);
+
+	pSphere = new Sphere(Vector3F(1, -1, -3), 0.5f);
+	pSphere->material.ambientColor = ColorRGBA(0.2f, 0, 0, 1);
+	pSphere->material.diffuseColor = ColorRGBA(0.8f, 0, 0, 1);
+	pSphere->material.shininess = 5;
+	mpScene->AddSceneObject(pSphere);
 
 	PointLight* pPointLight = new PointLight();
-	pPointLight->position = Vector3F(0.3f, 0, -7);
+	pPointLight->position = Vector3F(0.3f, 0, -4);
 	mpScene->AddLight(pPointLight);
 
 	pPointLight = new PointLight();
-	pPointLight->position = Vector3F(-0.3f, 0, -6);
+	pPointLight->position = Vector3F(-0.3f, 0, -3);
 	mpScene->AddLight(pPointLight);
 
-	mpRayTracer = new RayTracer(mpCamera, mpScene, Vector3F(0, 0, 0), Vector3F(0.5f, 0.5f, 0.5f));
+	mpRayTracer = new RayTracer(mpCamera, mpScene, ColorRGBA(0, 0, 0, 0), ColorRGBA(0.5f, 0.5f, 0.5f, 1));
 	
 	mRunning = true;
 	MSG message;
@@ -266,7 +305,7 @@ void Application::InitializeOpenGL()
 	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0, 0, 0, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -282,19 +321,19 @@ void Application::RepaintWindow()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glColor4f(1, 1, 1, 1);
 
 	// TODO: improve
 	glBegin(GL_QUADS);
 	glNormal3f(0, 0, 1);
-		glTexCoord2f(0.0f, 0.0f);   
-		glVertex3f(-1.0f, -1.0f, 0.0f);
-		glTexCoord2f(1.0f, 0.0f);   
-		glVertex3f( 1.0f, -1.0f, 0.0f);
-		glTexCoord2f(1.0f, 1.0f);   
-		glVertex3f( 1.0f,  1.0f, 0.0f);
-		glTexCoord2f(0.0f, 1.0f);   
-		glVertex3f(-1.0f,  1.0f, 0.0f);
+		glTexCoord2f(0, 0);   
+		glVertex3f(-1, -1, 0);
+		glTexCoord2f(1, 0);   
+		glVertex3f(1, -1, 0);
+		glTexCoord2f(1, 1);   
+		glVertex3f(1, 1, 0);
+		glTexCoord2f(0, 1);   
+		glVertex3f(-1, 1, 0);
 	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -312,7 +351,10 @@ void Application::RunRayTracing()
 	}
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
 
-	memset(mpDepthBuffer, static_cast<int>(mpCamera->GetFar()), sizeof(float) * DEPTH_BUFFER_SIZE);
+	for (unsigned int i = 0; i < DEPTH_BUFFER_SIZE; i++)
+	{
+		mpDepthBuffer[i] = mpCamera->GetFar();
+	}
 
 	if (mPBOSupported)
 	{
