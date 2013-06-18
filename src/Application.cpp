@@ -66,7 +66,7 @@ Application::Application() :
 	mpScene(0),
 	mpRayTracer(0),
 	mPBOSupported(false),
-	mpImageData(0),
+	mpTextureData(0),
 	mpDepthBuffer(0),
 	mRunRayTracing(true),
 	mLastRayTracingTime(0)
@@ -107,12 +107,12 @@ void Application::CreateBuffers()
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-		mpImageData = 0;
+		mpTextureData = 0;
 	}
 	else
 	{
-		mpImageData = new unsigned char[COLOR_BUFFER_SIZE];
-		memset(mpImageData, 0, sizeof(unsigned char) * COLOR_BUFFER_SIZE);
+		mpTextureData = new unsigned char[COLOR_BUFFER_SIZE];
+		memset(mpTextureData, 0, sizeof(unsigned char) * COLOR_BUFFER_SIZE);
 	}
 
 	mpDepthBuffer = new float[DEPTH_BUFFER_SIZE];
@@ -123,7 +123,7 @@ void Application::CreateBuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)mpImageData);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -277,7 +277,7 @@ void Application::RepaintWindow()
 	{
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpImageData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -310,7 +310,7 @@ void Application::RunRayTracing()
 	{
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpImageData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
 
 	memset(mpDepthBuffer, static_cast<int>(mpCamera->GetFar()), sizeof(float) * DEPTH_BUFFER_SIZE);
 
@@ -330,7 +330,7 @@ void Application::RunRayTracing()
 	}
 	else
 	{
-		mpRayTracer->Render(mpImageData, mpDepthBuffer);
+		mpRayTracer->Render(mpTextureData, mpDepthBuffer);
 	}
 }
 

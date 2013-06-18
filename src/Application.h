@@ -57,7 +57,7 @@ private:
 	Scene* mpScene;
 	RayTracer* mpRayTracer;
 	bool mPBOSupported;
-	unsigned char* mpImageData;
+	unsigned char* mpTextureData;
 	float* mpDepthBuffer;
 	bool mRunRayTracing;
 	double mLastRayTracingTime;

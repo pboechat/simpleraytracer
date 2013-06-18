@@ -9,7 +9,12 @@
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
-#define clamp(x, vmin, vmax) (((x) < (vmin)) ? (vmin) : (((x) > (vmax)) ? (vmax) : (x)))
+
+#define clamp(vector, vmin, vmax) \
+	vector.x = ((vector.x < (vmin)) ? (vmin) : ((vector.x > (vmax)) ? (vmax) : vector.x)); \
+	vector.y = ((vector.y < (vmin)) ? (vmin) : ((vector.y > (vmax)) ? (vmax) : vector.y)); \
+	vector.z = ((vector.z < (vmin)) ? (vmin) : ((vector.z > (vmax)) ? (vmax) : vector.z))
+
 #define writeToColorBuffer(colorBuffer, i, color) \
 	(colorBuffer)[(i)] = (unsigned char)(color.x * 255.0f); \
 	(colorBuffer)[(i) + 1] = (unsigned char)(color.y * 255.0f); \
@@ -104,9 +109,7 @@ void RayTracer::Render(unsigned char* pColorBuffer, float* pDepthBuffer)
 						color += colorContribution;
 					}
 
-					color.x = clamp(color.x, 0, 1);
-					color.y = clamp(color.y, 0, 1);
-					color.z = clamp(color.z, 0, 1);
+					clamp(color, 0, 1);
 
 					writeToColorBuffer(pColorBuffer, c, color);
 				}
