@@ -6,13 +6,13 @@
 #include "Transform.h"
 #include "Material.h"
 
-#define _USE_MATH_DEFINES
-
-#include <math.h>
+#include <cmath>
+#include <vector>
 
 struct SceneObject
 {
 	SceneObject* parent;
+	std::vector<SceneObject*> children;
 	Material material;
 	Transform localTransform;
 
@@ -25,6 +25,11 @@ struct SceneObject
 		if (parent != 0)
 		{
 			mWorldTransform *= parent->mWorldTransform;
+		}
+
+		for (unsigned int i = 0; i < children.size(); i++)
+		{
+			children[i]->Update();
 		}
 	}
 

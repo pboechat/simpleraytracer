@@ -42,8 +42,8 @@ struct Transform
 
 	inline Transform& operator *= (const Transform& rOther)
 	{
-		scale *= rOther.scale;
-		rotation *= rOther.rotation;
+		scale = rOther.scale * scale;
+		rotation = rOther.rotation * rotation;
 		position += rOther.position;
 
 		return *this;

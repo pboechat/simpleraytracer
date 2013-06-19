@@ -9,6 +9,8 @@ public class simpleraytracer : EditorWindow
 {
 	private static bool mIsWindowOpen;
 	private static string mPath;
+	private static Dictionary<Transform, int> mSceneObjectIds = new Dictionary<Transform, int> ();
+	private static int mLastAvailableId = 0;
 	
 	[MenuItem("simpleraytracer/Run")]
 	protected static void CreateWizard ()
@@ -85,7 +87,7 @@ public class simpleraytracer : EditorWindow
 
 	string QuaternionToMatrix3x3FString (Quaternion rotation)
 	{
-		Matrix4x4 matrix = Matrix4x4.TRS (Vector3.zero, rotation, Vector3.one);
+		Matrix4x4 matrix = Matrix4x4.TRS (Vector3.zero, rotation, new Vector3(1.0f, 1.0f, 1.0f));
 		return matrix.m00 + ", " + matrix.m01 + ", " + matrix.m02 + ", " + matrix.m10 + ", " + matrix.m11 + ", " + matrix.m12 + ", " + matrix.m20 + ", " + matrix.m21 + ", " + matrix.m22;
 	}
 
@@ -108,7 +110,7 @@ public class simpleraytracer : EditorWindow
 	
 	void WriteTransform (Transform transform, StreamWriter outFile, string indent)
 	{
-		outFile.WriteLine (indent + "<Transform scale=\"" + VectorToMatrix3x3FString (transform.localScale) + "\" rotation=\"" + QuaternionToMatrix3x3FString (transform.rotation) + "\" position=\"" + VectorToVector3FString (transform.position) + "\">");
+		outFile.WriteLine (indent + "<Transform scale=\"" + VectorToMatrix3x3FString (transform.localScale) + "\" rotation=\"" + QuaternionToMatrix3x3FString (transform.localRotation) + "\" position=\"" + VectorToVector3FString (transform.localPosition) + "\">");
 		outFile.WriteLine (indent + "</Transform>");
 	}
 	
@@ -167,6 +169,22 @@ public class simpleraytracer : EditorWindow
 		}
 		outFile.Close ();
 	}
+	
+	int GetId (Transform transform)
+	{
+		if (transform == null) {
+			return -1;
+		}
+		
+		int id;
+		if (mSceneObjectIds.ContainsKey (transform)) {
+			id = mSceneObjectIds [transform];
+		} else {
+			id = ++mLastAvailableId;
+			mSceneObjectIds [transform] = id;
+		}
+		return mSceneObjectIds [transform];
+	}
 
 	void WriteMesh (MeshFilter meshFilter, StreamWriter outFile, string indent)
 	{
@@ -180,7 +198,7 @@ public class simpleraytracer : EditorWindow
 		WriteArrayToFile (uvsFileName, meshFilter.sharedMesh.uv);
 		WriteArrayToFile (indicesFileName, meshFilter.sharedMesh.triangles);
 		
-		outFile.WriteLine (indent + "<Mesh vertices=\"" + verticesFileName + "\" normals=\"" + normalsFileName + "\" uvs=\"" + uvsFileName + "\" indices=\"" + indicesFileName + "\">");
+		outFile.WriteLine (indent + "<Mesh id=\"" + GetId (meshFilter.transform) + "\" parentId=\"" + GetId (meshFilter.transform.parent) + "\" vertices=\"" + verticesFileName + "\" normals=\"" + normalsFileName + "\" uvs=\"" + uvsFileName + "\" indices=\"" + indicesFileName + "\">");
 		
 		WriteTransform (meshFilter.transform, outFile, indent + indent);
 		
@@ -205,46 +223,47 @@ public class simpleraytracer : EditorWindow
 			}
 		}
         
+		mLastAvailableId = 0;
+		mSceneObjectIds.Clear ();
+		
 		string sceneFileName = mPath + unitySceneName + ".xml";
 		StreamWriter outFile = new StreamWriter (sceneFileName);
 		try {
 			outFile.WriteLine ("<Scene>");
 
 			string indent = "    ";
-
-			List<Transform> rootTransforms = GetRootTransforms ();
 			
-			bool cameraFound = false;
-			foreach (Transform transform in rootTransforms) {
-				Camera camera = transform.gameObject.GetComponent<Camera> ();
-				
-				if (camera == null) {
-					continue;
-				}
-				
-				WriteCamera (camera, outFile, indent);
-				cameraFound = true;
-				break;
-			}
-			
-			if (!cameraFound) {
+			Camera[] cameras = (Camera[])GameObject.FindObjectsOfType (typeof(Camera));
+			if (cameras.Length == 0) {
 				Debug.LogError ("no camera found");
 				outFile.Close ();
 				File.Delete (sceneFileName);
+			} else if (cameras.Length > 1) {
+				Debug.LogError ("multiple cameras not supported yet. using first camera available.");
 			}
 			
-			foreach (Transform transform in rootTransforms) {
-				Light[] lights = transform.gameObject.GetComponentsInChildren<Light> ();
-				foreach (Light light in lights) {
-					if (light.enabled == true) {
-						WriteLight (light, outFile, indent);
-					}
+			WriteCamera (cameras [0], outFile, indent);
+			
+			bool lightFound = false;
+			Light[] lights = (Light[])GameObject.FindObjectsOfType (typeof(Light));
+			foreach (Light light in lights) {
+				if (light.enabled == true) {
+					WriteLight (light, outFile, indent);
+					lightFound = true;
+				}
+			}
+			
+			if (!lightFound) {
+				Debug.Log ("no light was found in scene");
+			}
+			
+			MeshFilter[] meshFilters = (MeshFilter[])GameObject.FindObjectsOfType (typeof(MeshFilter));
+			foreach (MeshFilter meshFilter in meshFilters) {
+				if (!meshFilter.gameObject.activeSelf) {
+					continue;
 				}
 				
-				MeshFilter[] meshes = transform.gameObject.GetComponentsInChildren<MeshFilter> ();
-				foreach (MeshFilter mesh in meshes) {
-					WriteMesh (mesh, outFile, indent);
-				}
+				WriteMesh (meshFilter, outFile, indent);
 			}
 
 			outFile.WriteLine ("</Scene>");
@@ -252,7 +271,7 @@ public class simpleraytracer : EditorWindow
 			outFile.Close ();
 		}
 		
-		Debug.Log ("Scene exported successfully");
+		Debug.Log ("scene exported successfully");
 	}
 	
 	static List<Transform> GetRootTransforms ()

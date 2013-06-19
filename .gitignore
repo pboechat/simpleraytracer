@@ -22,8 +22,8 @@ UpgradeLog.XML
 *.csproj
 *.unityproj
 *.sln
-/*.userprefs
-/*.pidb
+*.userprefs
+*.pidb
 
 *.lck
 
