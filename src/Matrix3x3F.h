@@ -80,6 +80,30 @@ struct Matrix3x3F
 						  m31, m32, m33);
 	}
 
+	inline Matrix3x3F& operator *= (const Matrix3x3F& rOther)
+	{
+		/*
+		* |a11b11 + a12b21 + a13b31            a11b12 + a12b22 + a13b32                a11b13 + a12b23 + a13b33|
+		* |a21b11 + a22b21 + a23b31            a21b12 + a22b22 + a23b32                a21b13 + a22b23 + a23b33|
+		* |a31b11 + a32b21 + a33b31            a31b12 + a32b22 + a33b32                a31b13 + a32b23 + a33b33|
+		*/
+		float m11 = mMatrix[0] * rOther.mMatrix[0] + mMatrix[1] * rOther.mMatrix[3] + mMatrix[2] * rOther.mMatrix[6];
+		float m12 = mMatrix[0] * rOther.mMatrix[1] + mMatrix[1] * rOther.mMatrix[4] + mMatrix[2] * rOther.mMatrix[7];
+		float m13 = mMatrix[0] * rOther.mMatrix[2] + mMatrix[1] * rOther.mMatrix[5] + mMatrix[2] * rOther.mMatrix[8];
+		float m21 = mMatrix[3] * rOther.mMatrix[0] + mMatrix[4] * rOther.mMatrix[3] + mMatrix[5] * rOther.mMatrix[6];
+		float m22 = mMatrix[3] * rOther.mMatrix[1] + mMatrix[4] * rOther.mMatrix[4] + mMatrix[5] * rOther.mMatrix[7];
+		float m23 = mMatrix[3] * rOther.mMatrix[2] + mMatrix[4] * rOther.mMatrix[5] + mMatrix[5] * rOther.mMatrix[8];
+		float m31 = mMatrix[6] * rOther.mMatrix[0] + mMatrix[7] * rOther.mMatrix[3] + mMatrix[8] * rOther.mMatrix[6];
+		float m32 = mMatrix[6] * rOther.mMatrix[1] + mMatrix[7] * rOther.mMatrix[4] + mMatrix[8] * rOther.mMatrix[7];
+		float m33 = mMatrix[6] * rOther.mMatrix[2] + mMatrix[7] * rOther.mMatrix[5] + mMatrix[8] * rOther.mMatrix[8];
+
+		mMatrix[0] = m11; mMatrix[1] = m12;	mMatrix[2] = m13;
+		mMatrix[3] = m21; mMatrix[4] = m22;	mMatrix[5] = m23;
+		mMatrix[6] = m31; mMatrix[7] = m32; mMatrix[8] = m33;
+
+		return *this;
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	inline Matrix3x3F operator + (const Matrix3x3F& rOther) const
 	{

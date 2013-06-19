@@ -9,34 +9,36 @@
 class Camera
 {
 public:
-	Camera(unsigned int width, 
-		   unsigned int height,
-		   float FoV, 
-		   float near, 
-		   float far,
-		   const Vector3F& rEyePosition, 
-		   const Vector3F& rForward, 
-		   const Vector3F rUp) :
-	  mWidth(width),
-	  mHeight(height),
-	  mFoV(FoV),
-	  mNear(near),
-	  mFar(far),
-	  mEyePosition(rEyePosition),
-	  mForward(rForward),
-	  mUp(rUp)
+	Camera()
 	{
-		mAspectRatio = mWidth / (float)mHeight;
-		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(mFoV / 2.0));
-		mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
+	}
+
+	~Camera()
+	{
+	}
+
+	inline void SetParameters(float fov, float nearZ, float farZ, const Vector3F& rEyePosition, const Vector3F& rForward, const Vector3F rUp)
+	{
+		mFoV = fov;
+		mNear = nearZ;
+		mFar = farZ;
+
+		mEyePosition = rEyePosition;
+		mForward = rForward;
+		mUp = rUp;
 
 		mZ = (rEyePosition - rForward).Normalized();
 		mX = rUp.Cross(mZ);
 		mY = mZ.Cross(mX);
 	}
 
-	~Camera()
+	inline void SetViewport(unsigned int width, unsigned int height)
 	{
+		mWidth = width;
+		mHeight = height;
+		mAspectRatio = mWidth / (float)mHeight;
+		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(mFoV / 2.0));
+		mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
 	}
 
 	inline unsigned int GetWidth() const

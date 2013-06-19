@@ -3,7 +3,6 @@
 
 #include "ColorRGBA.h"
 #include "Texture.h"
-#include "RenderAttributes.h"
 
 struct Material
 {
@@ -12,7 +11,9 @@ struct Material
 	ColorRGBA specularColor;
 	float shininess;
 	Texture* texture;
-	RenderAttributes renderAttributes;
+	bool transparent;
+	float reflection;
+	float refraction;
 
 	Material() :
 		ambientColor(0, 0, 0, 0),

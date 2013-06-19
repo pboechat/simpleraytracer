@@ -8,12 +8,10 @@
 #include "ModelLoader.h"
 #include "PointLight.h"
 #include "TextureLoader.h"
+#include "SceneLoader.h"
 
-#include <iostream>
-#include <stdio.h>
-#include <io.h>
-#include <fcntl.h>
 #include <string>
+#include <exception>
 
 const char* Application::WINDOW_TITLE = "simpleraytracer";
 const char* Application::WINDOW_CLASS_NAME = "simpleraytracerWindowClass";
@@ -52,7 +50,8 @@ Application* Application::s_mpInstance = 0;
 	if (!functionCall) \
 	{ \
 		MessageBox(NULL, #errorMessage, WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION); \
-		return EXIT_FAILURE; \
+		Dispose(); \
+		exit(EXIT_FAILURE); \
 	} \
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,14 +64,15 @@ Application::Application() :
 	mOpenGLRenderingContextHandle(0),
 	mTextureId(0),
 	mPBOId(0),
+	mpSceneFileName(0),
 	mpCamera(0),
 	mpScene(0),
 	mpRayTracer(0),
 	mPBOSupported(false),
 	mpTextureData(0),
 	mpDepthBuffer(0),
-	mRunRayTracing(true),
-	mLastRayTracingTime(0)
+	mReloadScene(true),
+	mLastSceneReloadTime(0)
 {
 	s_mpInstance = this;
 }
@@ -84,6 +84,7 @@ Application::~Application()
 	s_mpInstance = 0;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void Application::CreateBuffers()
 {
 #ifdef _WIN32
@@ -122,8 +123,8 @@ void Application::CreateBuffers()
 
 	glGenTextures(1, &mTextureId);
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
@@ -148,88 +149,11 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	InitializeOpenGL();
 	CreateBuffers();
-
-	mpCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, 45, 1, 100, Vector3F(0, 0, 0), Vector3F(0.342f, 0, -0.939f), Vector3F(0, 1, 0));
-
+	
+	mpCamera = new Camera();
 	mpScene = new Scene();
 
-	Mesh* pMesh = new Mesh();
-	pMesh->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
-	pMesh->material.diffuseColor = ColorRGBA(0.8f, 0.8f, 0.8f, 1);
-	pMesh->material.shininess = 5;
-	pMesh->material.texture = TextureLoader::LoadFromPNG("textures/Brick.png");
-	pMesh->vertices.push_back(Vector3F(-1, -2, -6));
-	pMesh->vertices.push_back(Vector3F(1, -2, -6));
-	pMesh->vertices.push_back(Vector3F(1, 0, -6));
-	pMesh->vertices.push_back(Vector3F(-1, 0, -6));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->uvs.push_back(Vector2F(0, 0));
-	pMesh->uvs.push_back(Vector2F(1, 0));
-	pMesh->uvs.push_back(Vector2F(1, 1));
-	pMesh->uvs.push_back(Vector2F(0, 1));
-	pMesh->indices.push_back(0);
-	pMesh->indices.push_back(1);
-	pMesh->indices.push_back(2);
-	pMesh->indices.push_back(0);
-	pMesh->indices.push_back(2);
-	pMesh->indices.push_back(3);
-	mpScene->AddSceneObject(pMesh);
-
-	pMesh = new Mesh();
-	pMesh->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
-	pMesh->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
-	pMesh->material.shininess = 5;
-	pMesh->material.renderAttributes.reflectionCoeficient = 0.5f;
-	pMesh->vertices.push_back(Vector3F(1, -2, -6));
-	pMesh->vertices.push_back(Vector3F(3, -2, -6));
-	pMesh->vertices.push_back(Vector3F(3, 0, -6));
-	pMesh->vertices.push_back(Vector3F(1, 0, -6));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->normals.push_back(Vector3F(0, 0, 1));
-	pMesh->uvs.push_back(Vector2F(0, 0));
-	pMesh->uvs.push_back(Vector2F(1, 0));
-	pMesh->uvs.push_back(Vector2F(1, 1));
-	pMesh->uvs.push_back(Vector2F(0, 1));
-	pMesh->indices.push_back(0);
-	pMesh->indices.push_back(1);
-	pMesh->indices.push_back(2);
-	pMesh->indices.push_back(0);
-	pMesh->indices.push_back(2);
-	pMesh->indices.push_back(3);
-	mpScene->AddSceneObject(pMesh);
-
-	Sphere* pSphere = new Sphere(Vector3F(-0.5, -1, -5), 0.5f);
-	pSphere->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
-	pSphere->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 0.3f);
-	pSphere->material.shininess = 5;
-	pSphere->material.renderAttributes.transparent = true;
-	mpScene->AddSceneObject(pSphere);
-
-	pSphere = new Sphere(Vector3F(2, -0.5f, -4.5f), 0.333f);
-	pSphere->material.ambientColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
-	pSphere->material.diffuseColor = ColorRGBA(0.2f, 0.2f, 0.2f, 1);
-	pSphere->material.shininess = 5;
-	pSphere->material.texture = TextureLoader::LoadFromPNG("textures/Ball.png");
-	mpScene->AddSceneObject(pSphere);
-
-	pSphere = new Sphere(Vector3F(1.5f, -1, -3), 0.5f);
-	pSphere->material.ambientColor = ColorRGBA(0.2f, 0, 0, 1);
-	pSphere->material.diffuseColor = ColorRGBA(0.8f, 0, 0, 1);
-	pSphere->material.shininess = 5;
-	mpScene->AddSceneObject(pSphere);
-
-	PointLight* pPointLight = new PointLight();
-	pPointLight->position = Vector3F(0.3f, 0, -4);
-	mpScene->AddLight(pPointLight);
-
-	pPointLight = new PointLight();
-	pPointLight->position = Vector3F(-0.3f, 0, -3);
-	mpScene->AddLight(pPointLight);
+	mpSceneFileName = lpCmdLine; 
 
 	mpRayTracer = new RayTracer(mpCamera, mpScene, ColorRGBA(0, 0, 0, 0), ColorRGBA(0.5f, 0.5f, 0.5f, 1));
 	
@@ -254,27 +178,26 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		else
 		{
-			if (mRunRayTracing && Time::Now() - mLastRayTracingTime > 0.333f)
+			if (mReloadScene && Time::Now() - mLastSceneReloadTime > 0.333f)
 			{
+				LoadSceneFromXML();
 				RunRayTracing();
 
-				mRunRayTracing = false;
-				mLastRayTracingTime = Time::Now();
+				mReloadScene = false;
+				mLastSceneReloadTime = Time::Now();
 			}
 
 			RepaintWindow();
 		}
 	}
 
-	delete mpRayTracer;
-	delete mpScene;
-	delete mpCamera;
+	Dispose();
 
-	glDeleteTextures(1, &mTextureId);
-	glDeleteBuffersARB(1, &mPBOId);
-	CHECK_WINAPI_SUCCESS(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
-	CHECK_WINAPI_SUCCESS(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
 	CHECK_WINAPI_SUCCESS(UnregisterClass(WINDOW_CLASS_NAME, mApplicationHandle), "UnregisterClass() failed");
+
+	mDeviceContextHandle = 0;
+	mWindowHandle = 0;
+	mApplicationHandle = 0;
 
 	return (int) message.wParam;
 }
@@ -378,6 +301,65 @@ void Application::RunRayTracing()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void Application::Dispose()
+{
+	if (mpRayTracer)
+	{
+		delete mpRayTracer;
+		mpRayTracer = 0;
+	}
+	
+	if (mpScene)
+	{
+		delete mpScene;
+		mpScene = 0;
+	}
+	
+	if (mpCamera)
+	{
+		delete mpCamera;
+		mpCamera = 0;
+	}
+
+	if (mTextureId)
+	{
+		glDeleteTextures(1, &mTextureId);
+		mTextureId = 0;
+	}
+	
+	if (mPBOId)
+	{
+		glDeleteBuffersARB(1, &mPBOId);
+		mPBOId = 0;
+	}
+	
+	if (mOpenGLRenderingContextHandle)
+	{
+		CHECK_WINAPI_SUCCESS(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
+		CHECK_WINAPI_SUCCESS(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
+		mOpenGLRenderingContextHandle = 0;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::LoadSceneFromXML()
+{
+	mpScene->Clear();
+	try
+	{
+		SceneLoader::LoadFromXML(mpSceneFileName, *mpScene, *mpCamera);
+	}
+	catch (std::exception& rException)
+	{
+		MessageBox(mWindowHandle, rException.what(), WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		Dispose();
+		exit(EXIT_FAILURE);
+	}
+	mpCamera->SetViewport(WINDOW_WIDTH, WINDOW_HEIGHT);
+	mpScene->Update();
+}
+
+//////////////////////////////////////////////////////////////////////////
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Application application;
@@ -395,13 +377,13 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_KEYDOWN:
 		if (wParam == VK_F5)
 		{
-			Application::s_mpInstance->mRunRayTracing = true;
+			Application::s_mpInstance->mReloadScene = true;
 		}
 		break;
 	case WM_KEYUP:
 		if (wParam == VK_F5)
 		{
-			Application::s_mpInstance->mRunRayTracing = false;
+			Application::s_mpInstance->mReloadScene = false;
 		}
 		break;
 	default:

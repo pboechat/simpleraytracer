@@ -24,12 +24,12 @@ struct Mesh : public SceneObject
 			unsigned int i2 = indices[i + 1];
 			unsigned int i3 = indices[i + 2];
 
-			const Vector3F& rP1 = vertices[i1];
-			const Vector3F& rP2 = vertices[i2];
-			const Vector3F& rP3 = vertices[i3];
+			Vector3F p1 = mWorldTransform * vertices[i1];
+			Vector3F p2 = mWorldTransform * vertices[i2];
+			Vector3F p3 = mWorldTransform * vertices[i3];
 
 			float u, v, t;
-			if (BackFaceCullTriangleIntersection(rRay, rP1, rP2, rP3, &u, &v, &t))
+			if (BackFaceCullTriangleIntersection(rRay, p1, p2, p3, &u, &v, &t))
 			{
 				rHit.point = rRay.origin + t * rRay.direction;
 
@@ -37,18 +37,18 @@ struct Mesh : public SceneObject
 
 				if (normals.size() > 0)
 				{
-					const Vector3F& rNormal1 = normals[i1];
-					const Vector3F& rNormal2 = normals[i2];
-					const Vector3F& rNormal3 = normals[i3];
+					Vector3F n1 = mWorldTransform.rotation * normals[i1];
+					Vector3F n2 = mWorldTransform.rotation * normals[i2];
+					Vector3F n3 = mWorldTransform.rotation * normals[i3];
 
-					rHit.normal = (w * rNormal1 + u * rNormal2 + v * rNormal3).Normalized();
+					rHit.normal = (w * n1 + u * n2 + v * n3).Normalized();
 				}
 				else
 				{
-					Vector3F& rU = (rP2 - rP1);
-					Vector3F& rV = (rP3 - rP1);
+					const Vector3F& rEdge1 = (p2 - p1);
+					const Vector3F& rEdge2 = (p3 - p1);
 
-					rHit.normal = Vector3F(rU.y * rV.z - rU.z * rV.y, rU.z * rV.x - rU.x * rV.z, rU.x * rV.y - rU.y * rV.x);
+					rHit.normal = rEdge1.Cross(rEdge2);
 				}
 
 				if (uvs.size() > 0)

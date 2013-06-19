@@ -32,7 +32,7 @@ public:
 
 			if (file == 0)
 			{
-				throw std::exception("File not found");
+				throw std::exception("file not found");
 			}
 
 			fseek(file, 0, SEEK_END);

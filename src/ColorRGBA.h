@@ -3,6 +3,8 @@
 
 struct ColorRGBA
 {
+	static const ColorRGBA WHITE;
+
 	float r;
 	float g;
 	float b;

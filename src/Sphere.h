@@ -9,12 +9,10 @@
 
 struct Sphere : public SceneObject
 {
-	Vector3F center;
 	float radius;
 
-	Sphere(const Vector3F& rCenter, float radius)
+	Sphere(float radius)
 	{
-		this->center = rCenter;
 		this->radius = radius;
 	}
 
@@ -24,7 +22,7 @@ struct Sphere : public SceneObject
 
 	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const
 	{
-		Vector3F viewerDirection = rRay.origin - center;
+		Vector3F viewerDirection = rRay.origin - mWorldTransform.position;
 
 		float a = rRay.direction.Dot(rRay.direction);
 		float b = 2.0f * rRay.direction.Dot(viewerDirection);
@@ -51,7 +49,7 @@ struct Sphere : public SceneObject
 		}
 
 		rHit.point = rRay.origin + (t * rRay.direction);
-		rHit.normal = (rHit.point - center).Normalized();
+		rHit.normal = (rHit.point - mWorldTransform.position).Normalized();
 
 		// Spherical Mapping with Normals:
 		// http://www.mvps.org/directx/articles/spheremap.htm

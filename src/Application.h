@@ -53,22 +53,25 @@ private:
 	HGLRC mOpenGLRenderingContextHandle;
 	unsigned int mTextureId;
 	unsigned int mPBOId;
+	char* mpSceneFileName;
 	Camera* mpCamera;
 	Scene* mpScene;
 	RayTracer* mpRayTracer;
 	bool mPBOSupported;
 	unsigned char* mpTextureData;
 	float* mpDepthBuffer;
-	bool mRunRayTracing;
-	double mLastRayTracingTime;
+	bool mReloadScene;
+	double mLastSceneReloadTime;
 	
 	Application();
 	~Application();
 
 	void InitializeOpenGL();
 	void CreateBuffers();
-	void RunRayTracing();
 	void RepaintWindow();
+	void LoadSceneFromXML();
+	void RunRayTracing();
+	void Dispose();
 	WNDCLASSEX CreateWindowClass();
 
 };

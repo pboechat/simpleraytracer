@@ -87,7 +87,7 @@ ColorRGBA RayTracer::Trace(const Ray& rRay, float* pCurrentDepth, SceneObject* p
 
 			ColorRGBA currentColor = Shade(pSceneObject, rRay, hit);
 
-			if (pSceneObject->material.renderAttributes.transparent)
+			if (pSceneObject->material.transparent)
 			{
 				finalColor = currentColor.Blend(finalColor);
 			}
@@ -162,19 +162,19 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 		color += colorContribution;
 	}
 
-	if (rMaterial.renderAttributes.reflectionCoeficient > 0)
+	if (rMaterial.reflection > 0)
 	{
 		Vector3F reflectionDirection = (-viewerDirection).Reflection(rNormal).Normalized();
 		Ray reflectionRay(rHit.point, reflectionDirection);
 		float newDepth = mpCamera->GetFar();
-		color += rMaterial.renderAttributes.reflectionCoeficient * Trace(reflectionRay, &newDepth, pSceneObject);
+		color += rMaterial.reflection * Trace(reflectionRay, &newDepth, pSceneObject);
 	}
 
-	if (rMaterial.renderAttributes.refractionIndex > 0)
+	if (rMaterial.refraction > 0)
 	{
 		Vector3F& rVt = viewerDirection.Dot(rNormal) * rNormal - viewerDirection;
 		float sinI = rVt.Length();
-		float sinT = rMaterial.renderAttributes.refractionIndex * sinI;
+		float sinT = rMaterial.refraction * sinI;
 		float cosT = sqrt(1.0f - (sinT * sinT));
 		Vector3F& rT = (1.0f / rVt.Length()) * rVt;
 		Vector3F& rRefractionDirection = sinT * rT + cosT * (-rNormal);
