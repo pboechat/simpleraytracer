@@ -1,7 +1,11 @@
+[Ll]ibrary/
+[Tt]emp/
 [Dd]ebug/
 [Rr]elease/
 [Dd]ebug_FFP/
 [Rr]elease_FFP/
+[Oo]bj/
+[B]uild/
 ipch/
 
 memory_leak_report.txt
@@ -12,6 +16,16 @@ UpgradeLog.XML
 *.opensdf
 *.suo
 *.vcxproj.user
+
+*.exe
+*.unity3d
+*.csproj
+*.unityproj
+*.sln
+/*.userprefs
+/*.pidb
+
+*.lck
 
 # AStyle Backup
 *.orig

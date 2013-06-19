@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+#define DEG2RAD 0.017453293f
+
 class Camera
 {
 public:
@@ -37,7 +39,7 @@ public:
 		mWidth = width;
 		mHeight = height;
 		mAspectRatio = mWidth / (float)mHeight;
-		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(mFoV / 2.0));
+		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(DEG2RAD * mFoV / 2.0f));
 		mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
 	}
 

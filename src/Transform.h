@@ -28,9 +28,9 @@ struct Transform
 	inline Vector3F operator * (const Vector3F& rVector) const
 	{
 		Vector3F vector = rVector;
-		vector += position;
-		vector = rotation * vector;
 		vector = scale * vector;
+		vector = rotation * vector;
+		vector += position;
 
 		return vector;
 	}
