@@ -7,6 +7,7 @@
 #include "Texture.h"
 #include "TextureLoader.h"
 #include "StringUtils.h"
+#include "BoundingSphere.h"
 
 #include <string.h>
 #include <vector>
@@ -53,10 +54,8 @@ void SceneLoader::LoadFromXML(const std::string& rFileName, Scene& rScene, Camer
 				pSceneObject->parent = pParent;
 				pParent->children.push_back(pSceneObject);
 			}
-			else
-			{
-				rScene.AddSceneObject(pSceneObject);
-			}
+
+			rScene.AddSceneObject(pSceneObject);
 
 			it++;
 		}
@@ -193,6 +192,11 @@ void SceneLoader::ParseMesh(Scene& rScene, std::map<int, SceneObject*>& rSceneOb
 			ParseMaterial(pChild, pMesh->material);
 		}
 	}
+
+	// TODO: generalize bounding volume creation
+	BoundingSphere* pBoundingSphere = new BoundingSphere();
+	pBoundingSphere->Compute(pMesh->vertices);
+	pMesh->boundingVolume = pBoundingSphere;
 
 	rSceneObjectIds[id] = pMesh;
 }

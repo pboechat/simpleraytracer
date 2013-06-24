@@ -160,12 +160,30 @@ struct Vector3F
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline float operator[] (unsigned int i)
+	{
+		i = i % 3;
+		if (i == 0)
+		{
+			return x;
+		}
+		else if (i == 1)
+		{
+			return y;
+		}
+		else 
+		{
+			return z;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline float Distance(const Vector3F& rOther) const
 	{
 		float x1 = rOther.x - x;
 		float y1 = rOther.y - y;
 		float z1 = rOther.z - z;
-		return sqrt((x1 * x1) + (y1 * y1) + (z1 * z1));
+		return sqrt(x1 * x1 + y1 * y1 + z1 * z1);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

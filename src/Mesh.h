@@ -18,6 +18,11 @@ struct Mesh : public SceneObject
 
 	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const
 	{
+		if (boundingVolume != 0 && !boundingVolume->Intersect(rRay))
+		{
+			return false;
+		}
+
 		for (unsigned int i = 0; i < indices.size(); i += 3)
 		{
 			unsigned int i1 = indices[i];

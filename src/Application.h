@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "RayTracer.h"
+#include "CommandPrompt.h"
 
 #include <windows.h>
 #include <GL/GL.h>
@@ -62,12 +63,14 @@ private:
 	float* mpDepthBuffer;
 	bool mReloadScene;
 	double mLastSceneReloadTime;
+	CommandPrompt* mpCommandPrompt;
 	
 	Application();
 	~Application();
 
 	void InitializeOpenGL();
 	void CreateBuffers();
+	void CheckCommandPrompt();
 	void RepaintWindow();
 	void LoadSceneFromXML();
 	void RunRayTracing();

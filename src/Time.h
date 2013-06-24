@@ -10,47 +10,31 @@ class Time
 public:
 	static double Now()
 	{
+		static double frequency = -1.0;
 		LARGE_INTEGER time;
 
-		if (QueryPerformanceCounter(&time))
+		if (frequency == -1.0)
 		{
-			return (double)time.QuadPart * GetSecondsPerTick();
-		}
-
-		else
-		{
-			throw std::exception("Cannot query performance counter frequency");
-		}
-	}
-
-private:
-	static double s_mSecondsPerTick;
-
-	static double GetSecondsPerTick()
-	{
-		if (s_mSecondsPerTick == -1)
-		{
-			LARGE_INTEGER frequency;
-
-			if (QueryPerformanceFrequency(&frequency))
-			{
-				s_mSecondsPerTick = 1.0 / frequency.QuadPart;
-			}
-
-			else
+			if (!QueryPerformanceFrequency(&time))
 			{
 				throw std::exception("Cannot query performance counter frequency");
 			}
+
+			frequency = (double) time.QuadPart;
 		}
 
-		return s_mSecondsPerTick;
+		if(!QueryPerformanceCounter(&time))
+		{
+			throw std::exception("Cannot query performance counter");
+		}
+
+		return (double)time.QuadPart / frequency;
 	}
 
+private:
 	Time() {}
 	~Time() {}
 
 };
-
-double Time::s_mSecondsPerTick = -1;
 
 #endif

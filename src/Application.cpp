@@ -72,7 +72,8 @@ Application::Application() :
 	mpTextureData(0),
 	mpDepthBuffer(0),
 	mReloadScene(true),
-	mLastSceneReloadTime(0)
+	mLastSceneReloadTime(0),
+	mpCommandPrompt(0)
 {
 	s_mpInstance = this;
 }
@@ -157,6 +158,9 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	mpRayTracer = new RayTracer(mpCamera, mpScene, ColorRGBA(0, 0, 0, 0), ColorRGBA(0.5f, 0.5f, 0.5f, 1));
 	
+	mpCommandPrompt = new CommandPrompt();
+	mpCommandPrompt->Start();
+
 	mRunning = true;
 	MSG message;
 	while (mRunning)
@@ -181,15 +185,25 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			if (mReloadScene && Time::Now() - mLastSceneReloadTime > 0.333f)
 			{
 				LoadSceneFromXML();
+
+				double start = Time::Now();
+
 				RunRayTracing();
+
+				double end = Time::Now();
 
 				mReloadScene = false;
 				mLastSceneReloadTime = Time::Now();
+
+				mpCommandPrompt->ShowMessage("Elapsed time: %.5f seconds", (end - start));
 			}
 
 			RepaintWindow();
 		}
 	}
+
+	mpCommandPrompt->Finish();
+	delete mpCommandPrompt;
 
 	Dispose();
 
@@ -375,9 +389,17 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		PostQuitMessage(0);
 		break;
 	case WM_KEYDOWN:
-		if (wParam == VK_F5)
+		if (wParam == VK_ESCAPE)
+		{
+			DestroyWindow(Application::s_mpInstance->mWindowHandle);
+		}
+		else if (wParam == VK_F5)
 		{
 			Application::s_mpInstance->mReloadScene = true;
+		}
+		else if (wParam == VK_F2)
+		{
+			Application::s_mpInstance->mpCommandPrompt->Toggle();
 		}
 		break;
 	case WM_KEYUP:

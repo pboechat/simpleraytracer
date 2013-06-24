@@ -1,0 +1,12 @@
+<Scene>
+    <Camera fov="60" near="0.3" far="1000" eyePosition="0, 1, -10" forward="0, 0, 1" up="0, 1, 0">
+    </Camera>
+    <Light type="directional" diffuseLight="1, 1, 1, 1" intensity="1" direction="-0.3213938, -0.7660446, 0.5566703">
+    </Light>
+    <Mesh id="1" parentId="-1" vertices="C:\simpleraytracer\scenes\Rooster.vertices" normals="C:\simpleraytracer\scenes\Rooster.normals" uvs="C:\simpleraytracer\scenes\Rooster.uvs" indices="C:\simpleraytracer\scenes\Rooster.indices">
+        <Transform scale="1.203508, 0, 0, 0, 1, 0, 0, 0, 7.285171" rotation="0.7071067, 0.7071069, 0, 0, -1.192093E-07, 1, 0.7071069, -0.7071068, -1.192093E-07" position="0, 0, 0">
+        </Transform>
+        <Material ambientColor="0, 0, 0, 0" diffuseColor="0.6980392, 0.6980392, 0.6980392, 1" specularColor="0, 0, 0, 0" texture="textures/Rooster.png"  shininess="1" transparent="0" reflection="0" refraction="0">
+        </Material>
+    </Mesh>
+</Scene>
