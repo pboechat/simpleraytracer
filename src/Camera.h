@@ -2,6 +2,7 @@
 #define CAMERA_H_
 
 #include "Vector3F.h"
+#include "Matrix4x4F.h"
 #include "Ray.h"
 
 #include <cmath>
@@ -66,6 +67,18 @@ public:
 	inline const Vector3F& GetEyePosition() const
 	{
 		return mEyePosition;
+	}
+
+	inline Matrix4x4F GetProjectionMatrix() const
+	{
+		// TODO:
+		return Matrix4x4F();
+	}
+
+	inline Matrix4x4F GetViewMatrix() const
+	{
+		// TODO:
+		return Matrix4x4F();
 	}
 
 	inline Ray GetRayFromScreenCoordinates(unsigned int x, unsigned int y) const

@@ -68,12 +68,16 @@ Application::Application() :
 	mpCamera(0),
 	mpScene(0),
 	mpRayTracer(0),
+	mpOpenGLRenderer(0),
 	mPBOSupported(false),
 	mpTextureData(0),
 	mpDepthBuffer(0),
 	mReloadScene(true),
 	mLastSceneReloadTime(0),
-	mpCommandPrompt(0)
+	mClearColor(0, 0, 0, 0),
+	mpCommandPrompt(0),
+	mDebugModeEnabled(false),
+	mRayDebuggingEnabled(false)
 {
 	s_mpInstance = this;
 }
@@ -156,8 +160,10 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	mpSceneFileName = lpCmdLine; 
 
-	mpRayTracer = new RayTracer(mpCamera, mpScene, ColorRGBA(0, 0, 0, 0), ColorRGBA(0.5f, 0.5f, 0.5f, 1));
+	mpRayTracer = new RayTracer(mpCamera, mpScene, mClearColor, ColorRGBA(0.5f, 0.5f, 0.5f, 1));
 	
+	mpOpenGLRenderer = new OpenGLRenderer(mpCamera, mpScene);
+
 	mpCommandPrompt = new CommandPrompt();
 	mpCommandPrompt->Start();
 
@@ -201,9 +207,6 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			RepaintWindow();
 		}
 	}
-
-	mpCommandPrompt->Finish();
-	delete mpCommandPrompt;
 
 	Dispose();
 
@@ -249,21 +252,42 @@ void Application::InitializeOpenGL()
 //////////////////////////////////////////////////////////////////////////
 void Application::RepaintWindow()
 {
-	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	if (mPBOSupported)
+	if (mDebugModeEnabled)
 	{
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		glClearColor(mClearColor.r, mClearColor.g, mClearColor.b, mClearColor.a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(mpCamera->GetProjectionMatrix()[0]);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadMatrixf(mpCamera->GetViewMatrix()[0]);
+
+		mpOpenGLRenderer->Render();
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
+	else
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 
-	glClear(GL_COLOR_BUFFER_BIT);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
-	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	glColor4f(1, 1, 1, 1);
+		glBindTexture(GL_TEXTURE_2D, mTextureId);
+		if (mPBOSupported)
+		{
+			glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		}
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
 
-	// TODO: improve
-	glBegin(GL_QUADS);
-	glNormal3f(0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glBindTexture(GL_TEXTURE_2D, mTextureId);
+		glColor4f(1, 1, 1, 1);
+
+		// TODO: improve
+		glBegin(GL_QUADS);
+		glNormal3f(0, 0, 1);
 		glTexCoord2f(0, 0);   
 		glVertex3f(-1, -1, 0);
 		glTexCoord2f(1, 0);   
@@ -272,9 +296,10 @@ void Application::RepaintWindow()
 		glVertex3f(1, 1, 0);
 		glTexCoord2f(0, 1);   
 		glVertex3f(-1, 1, 0);
-	glEnd();
+		glEnd();
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
 	SwapBuffers(mDeviceContextHandle);
 }
@@ -321,6 +346,19 @@ void Application::Dispose()
 	{
 		delete mpRayTracer;
 		mpRayTracer = 0;
+	}
+
+	if (mpOpenGLRenderer)
+	{
+		delete mpOpenGLRenderer;
+		mpOpenGLRenderer = 0;
+	}
+
+	if (mpCommandPrompt)
+	{
+		mpCommandPrompt->Finish();
+		delete mpCommandPrompt;
+		mpCommandPrompt = 0;
 	}
 	
 	if (mpScene)

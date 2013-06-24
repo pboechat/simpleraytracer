@@ -44,9 +44,9 @@ struct Matrix3x3F
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	inline Vector3F operator[] (unsigned int i) const
+	inline const float* operator[] (unsigned int i) const
 	{
-		return Vector3F(mMatrix[i], mMatrix[i + 1], mMatrix[i + 2]);
+		return &mMatrix[0];
 	}
 
 	//////////////////////////////////////////////////////////////////////////

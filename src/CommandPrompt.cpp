@@ -1,5 +1,7 @@
 #include "CommandPrompt.h"
 #include "StringUtils.h"
+#include "Application.h"
+#include "Vector2F.h"
 
 #include <stdio.h>
 #include <io.h>
@@ -155,7 +157,7 @@ DWORD CommandPrompt::Run()
 		{
 			ParseCommand();
 			mCommand.clear();
-			std::cout  << std::endl << "> ";
+			std::cout << std::endl << std::endl << "> ";
 			mParseCommand = false;
 		}
 	}
@@ -170,33 +172,66 @@ void CommandPrompt::ParseCommand()
 {
 	StringUtils::Trim(mCommand);
 
-	if (mCommand.compare(0, 9, "debug_ray") == 0)
+	if (mCommand.compare(0, 10, "debug_mode") == 0)
 	{
 		std::vector<std::string> tokens;
 
 		StringUtils::Tokenize(mCommand, " ", tokens);
 
-		if (tokens.size() < 3)
+		if (tokens.size() != 2)
 		{
-			std::cout << "debug_ray: Invalid number of arguments." << std::endl;
+			std::cout << "debug_ray: Invalid number of arguments.";
 			return;
 		}
 
-		int x = atoi(tokens[1].c_str());
-		int y = atoi(tokens[2].c_str());
-
-		if (x == 0 || y == 0)
+		if (tokens[1] == "off")
 		{
-			std::cout << "debug_ray: Invalid ray position. Ray position must be between 1 and width/height." << std::endl;
-			return;
+			Application::GetInstance()->DisableDebugMode();
+		}
+		else if (tokens[1] == "on")
+		{
+			Application::GetInstance()->EnableDebugMode();
 		}
 	}
-	else if (mCommand == "exit")
+	else if (mCommand.compare(0, 9, "debug_ray") == 0)
 	{
-		mRunning = false;
+		std::vector<std::string> tokens;
+
+		StringUtils::Tokenize(mCommand, " ", tokens);
+
+		if (tokens.size() < 2)
+		{
+			std::cout << "debug_ray: Invalid number of arguments.";
+			return;
+		}
+
+		if (tokens.size() == 2)
+		{
+			if (tokens[1] == "off")
+			{
+				Application::GetInstance()->DisableRayDebugging();
+			}
+			else
+			{
+				std::cout<< "debug_ray: Invalid argument.";
+			}
+		}
+		else 
+		{
+			int x = atoi(tokens[1].c_str());
+			int y = atoi(tokens[2].c_str());
+
+			if (x == 0 || y == 0)
+			{
+				std::cout << "debug_ray: Invalid ray position. Ray position must be between 1 and width/height.";
+				return;
+			}
+
+			Application::GetInstance()->EnableRayDebugging(Vector2F((float)x, (float)y));
+		}
 	}
 	else 
 	{
-		std::cout << "Unknown command." << std::endl;
+		std::cout << "Unknown command.";
 	}
 }

@@ -4,7 +4,9 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "RayTracer.h"
+#include "OpenGLRenderer.h"
 #include "CommandPrompt.h"
+#include "ColorRGBA.h"
 
 #include <windows.h>
 #include <GL/GL.h>
@@ -27,6 +29,29 @@ public:
 	}
 
 	int Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+
+	inline void EnableDebugMode()
+	{
+		mDebugModeEnabled = true;
+	}
+
+	inline void DisableDebugMode()
+	{
+		mDebugModeEnabled = false;
+	}
+
+	inline void EnableRayDebugging(const Vector2F& rRayToDebug)
+	{
+		mDebugModeEnabled = true;
+		mRayToDebug = rRayToDebug;
+		mRayDebuggingEnabled = true;
+	}
+
+	inline void DisableRayDebugging()
+	{
+		mRayDebuggingEnabled = false;
+		mDebugModeEnabled = false;
+	}
 
 	friend int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 	friend LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -58,12 +83,17 @@ private:
 	Camera* mpCamera;
 	Scene* mpScene;
 	RayTracer* mpRayTracer;
+	OpenGLRenderer* mpOpenGLRenderer;
 	bool mPBOSupported;
 	unsigned char* mpTextureData;
 	float* mpDepthBuffer;
 	bool mReloadScene;
 	double mLastSceneReloadTime;
+	ColorRGBA mClearColor;
 	CommandPrompt* mpCommandPrompt;
+	bool mDebugModeEnabled;
+	bool mRayDebuggingEnabled;
+	Vector2F mRayToDebug;
 	
 	Application();
 	~Application();

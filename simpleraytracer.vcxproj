@@ -69,6 +69,7 @@
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\ColorRGBA.cpp" />
     <ClCompile Include="src\CommandPrompt.cpp" />
+    <ClCompile Include="src\OpenGLRenderer.cpp" />
     <ClCompile Include="src\PicoPNG.cpp" />
     <ClCompile Include="src\RayTracer.cpp" />
     <ClCompile Include="src\SceneLoader.cpp" />
@@ -89,8 +90,10 @@
     <ClInclude Include="src\Light.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\Matrix3x3F.h" />
+    <ClInclude Include="src\Matrix4x4F.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\ModelLoader.h" />
+    <ClInclude Include="src\OpenGLRenderer.h" />
     <ClInclude Include="src\PicoPNG.h" />
     <ClInclude Include="src\PointLight.h" />
     <ClInclude Include="src\RapidXML.h" />
