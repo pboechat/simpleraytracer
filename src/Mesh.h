@@ -23,6 +23,10 @@ struct Mesh : public SceneObject
 	{
 	}
 
+	virtual ~Mesh()
+	{
+	}
+
 	virtual void Update()
 	{
 		SceneObject::Update();

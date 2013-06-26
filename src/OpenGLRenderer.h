@@ -3,8 +3,10 @@
 
 #include "Camera.h"
 #include "Scene.h"
+#include "SceneObject.h"
 #include "Sphere.h"
 #include "Mesh.h"
+#include "Matrix4x4F.h"
 
 #include <map>
 
@@ -19,11 +21,15 @@ public:
 private:
 	const Camera* mpCamera;
 	const Scene* mpScene;
-	std::map<Mesh*, unsigned int> mTextureIds;
+	std::map<SceneObject*, unsigned int> mTextureIds;
+	std::map<Sphere*, Mesh*> mSphereMeshes;
 
 	void RenderMesh(Mesh* pMesh);
 	void RenderSphere(Sphere* pSphere);
-	unsigned int AllocateTextureForMesh(Mesh* pMesh);
+	void SetUpMaterial(SceneObject* pSceneObject);
+	void RenderTriangles(const Matrix4F& model, const std::vector<unsigned int>& indices, const std::vector<Vector3F>& vertices, const std::vector<Vector3F>& normals, const std::vector<Vector2F>& uvs);
+	unsigned int AllocateTextureForSceneObject(SceneObject* pSceneOBject);
+	Mesh* CreateMeshForSphere(Sphere* pSphere);
 
 };
 

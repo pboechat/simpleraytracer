@@ -23,6 +23,10 @@ struct OBB : public BoundingVolume
 	Vector3F maxValues;
 	Vector3F axis[3];
 
+	virtual ~OBB()
+	{
+	}
+
 	virtual bool Compute(const std::vector<Vector3F>& rPoints)
 	{
 		Vector3F centroid;

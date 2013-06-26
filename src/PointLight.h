@@ -3,15 +3,18 @@
 
 #include "Light.h"
 
-class PointLight : public Light
+struct PointLight : public Light
 {
-public:
 	Vector3F position;
 	float attenuation;
 
 	PointLight() :
 		Light(),
 		attenuation(1.0f)
+	{
+	}
+
+	virtual ~PointLight()
 	{
 	}
 

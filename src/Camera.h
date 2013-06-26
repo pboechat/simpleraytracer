@@ -36,17 +36,18 @@ public:
 		mY = mZ.Cross(mX);
 
 		// the inverse of a pure rotation matrix is its transpose
-		Matrix4F rotation(mX.x(), mX.y(), mX.z(), 0,
-			              mY.x(), mY.y(), mY.z(), 0,
-						  mZ.x(), mZ.y(), mZ.z(), 0,
-						  0,      0,      0,      1);
+		mInverseRotationMatrix = Matrix4F(mX.x(), mX.y(), mX.z(), 0,
+										  mY.x(), mY.y(), mY.z(), 0,
+										  mZ.x(), mZ.y(), mZ.z(), 0,
+										  0,      0,      0,      1);
 
+		// "inverse" translation
 		Matrix4F translation(1, 0, 0, -mEyePosition.x(), 
 							 0, 1, 0, -mEyePosition.y(), 
 							 0, 0, 1, -mEyePosition.z(), 
 							 0, 0, 0, 1);
 
-		mViewMatrix = rotation * translation;
+		mViewMatrix = mInverseRotationMatrix * translation;
 	}
 
 	inline void SetViewport(unsigned int width, unsigned int height)
@@ -99,6 +100,11 @@ public:
 		return mViewMatrix;
 	}
 
+	inline const Matrix4F& GetInverseRotationMatrix() const
+	{
+		return mInverseRotationMatrix;
+	}
+
 	inline Ray GetRayFromScreenCoordinates(unsigned int x, unsigned int y) const
 	{
 		Vector3F direction = (-mNear * mZ) + (mProjectionPlaneHeight * ((float)y / (float)mHeight - 0.5f) * mY) + (mProjectionPlaneWidth * ((float)x / (float)mWidth - 0.5f) * mX);
@@ -117,6 +123,7 @@ private:
 	float mFar;
 	Matrix4F mProjectionMatrix;
 	Matrix4F mViewMatrix;
+	Matrix4F mInverseRotationMatrix;
 	unsigned int mWidth;
 	unsigned int mHeight;
 	float mAspectRatio;

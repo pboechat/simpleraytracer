@@ -20,6 +20,10 @@ struct SceneObject
 	Material material;
 	Transform localTransform;
 
+	virtual ~SceneObject()
+	{
+	}
+
 	inline Matrix4x4F model() const
 	{
 		Matrix4x4F model;

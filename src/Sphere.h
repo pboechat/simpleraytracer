@@ -16,7 +16,7 @@ struct Sphere : public SceneObject
 		this->radius = radius;
 	}
 
-	~Sphere()
+	virtual ~Sphere()
 	{
 	}
 

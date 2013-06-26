@@ -3,15 +3,18 @@
 
 #include "Light.h"
 
-class DirectionalLight : public Light
+struct DirectionalLight : public Light
 {
-public:
 	Vector3F direction;
 
 	DirectionalLight(const ColorRGBA& rDiffuseColor, const ColorRGBA& rSpecularColor, float intensity, const Vector3F& rDirection) :
 		Light(rDiffuseColor, rSpecularColor, intensity)
 	{
 		direction = rDirection;
+	}
+
+	virtual ~DirectionalLight()
+	{
 	}
 
 };

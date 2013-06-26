@@ -5,7 +5,7 @@
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-class BoundingSphere : public BoundingVolume
+struct BoundingSphere : public BoundingVolume
 {
 public:
 	Vector3F center;
@@ -14,6 +14,10 @@ public:
 	BoundingSphere() :
 		radius(0),
 		mCurrentRadius(0)
+	{
+	}
+
+	virtual ~BoundingSphere()
 	{
 	}
 

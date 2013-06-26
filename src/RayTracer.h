@@ -23,7 +23,6 @@ private:
 
 	ColorRGBA Trace(const Ray& rRay, float* pCurrentDepth, SceneObject* pIgnoreSceneObject = 0) const;
 	ColorRGBA Shade(SceneObject* pSceneObject, const Ray& rRay, const RayHit& rHit) const;
-
 	bool IsLightBlocked(const Ray& rShadowRay, float distanceToLight, SceneObject* pOriginSceneObject) const;
 	ColorRGBA BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const ColorRGBA& rMaterialSpecularColor, float materialShininess, const Light& rLight, const Vector3F& rLightDirection, const Vector3F& rViewerDirection, const Vector3F& rNormal) const;
 

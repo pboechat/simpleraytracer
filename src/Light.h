@@ -3,12 +3,15 @@
 
 #include "ColorRGBA.h"
 
-class Light
+struct Light
 {
-public:
 	ColorRGBA diffuseColor;
 	ColorRGBA specularColor;
 	float intensity;
+
+	virtual ~Light()
+	{
+	}
 
 protected:
 	Light() :

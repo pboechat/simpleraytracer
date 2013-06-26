@@ -9,9 +9,18 @@
 
 struct BoundingVolume
 {
+	~BoundingVolume()
+	{
+	}
+
 	virtual bool Compute(const std::vector<Vector3F>& rPoints) = 0;
 	virtual bool Intersect(const Ray& rRay) const = 0;
 	virtual void Update(Transform transform) = 0;
+
+protected:
+	BoundingVolume()
+	{
+	}
 
 };
 

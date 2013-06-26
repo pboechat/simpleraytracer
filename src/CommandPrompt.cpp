@@ -192,6 +192,11 @@ void CommandPrompt::ParseCommand()
 		{
 			Application::GetInstance()->EnableDebugMode();
 		}
+		else
+		{
+			std::cout << "debug_mode: Invalid option.";
+			return;
+		}
 	}
 	else if (mCommand.compare(0, 9, "debug_ray") == 0)
 	{

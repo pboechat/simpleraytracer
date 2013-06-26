@@ -4,9 +4,16 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "Material.h"
+#include "Vector3F.h"
+#include "Vector4F.h"
 #include "Matrix3x3F.h"
+#include "Matrix4x4F.h"
 
 #include <cmath>
+#include <exception>
+
+#define cast(x, y) dynamic_cast<y*>(x)
+#define is(x, y) dynamic_cast<y*>(x) != 0
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -116,27 +123,29 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 	{
 		Light* pLight = mpScene->GetLight(j);
 
-		PointLight* pPointLight;
-
 		Vector3F lightDirection;
-		if ((pPointLight = static_cast<PointLight*>(pLight)) != 0)
+		if (is(pLight, DirectionalLight))
 		{
-			lightDirection = (pPointLight->position - rHit.point).Normalized();
+			Vector4F direction;
+			ToVector4F(direction, cast(pLight, DirectionalLight)->direction);
+			lightDirection = Vector3F(mpCamera->GetInverseRotationMatrix() * direction);
 		}
-		else
+		else if (is(pLight, PointLight))
 		{
-			// FIXME: rotate according to view
-			lightDirection = static_cast<DirectionalLight*>(pLight)->direction;
-		}
-
-		float distanceToLight;
-		if (pPointLight == 0)
-		{
-			distanceToLight = -1;
+			lightDirection = (cast(pLight, PointLight)->position - rHit.point).Normalized();
 		}
 		else 
 		{
-			distanceToLight = pPointLight->position.Distance(rHit.point);
+			throw std::exception("unimplemented light type");
+		}
+
+		float distanceToLight = -1;
+		if (is(pLight, PointLight))
+		{
+			Vector4F lightPosition;
+			ToVector4F(lightPosition, cast(pLight, PointLight)->position);
+			lightPosition = mpCamera->GetViewMatrix() * lightPosition;
+			distanceToLight = Vector3F(lightPosition).Distance(rHit.point);
 		}
 
 		Ray shadowRay(rHit.point, lightDirection);
@@ -153,9 +162,9 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 
 		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *pLight, lightDirection, viewerDirection, rNormal);
 
-		if (pPointLight != 0)
+		if (is(pLight, PointLight))
 		{
-			float distanceAttenuation = 1.0f / max(pPointLight->attenuation * (distanceToLight * distanceToLight), 1);
+			float distanceAttenuation = 1.0f / max(cast(pLight, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
 			colorContribution *= distanceAttenuation;
 		}
 
