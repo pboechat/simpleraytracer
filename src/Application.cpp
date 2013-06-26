@@ -242,11 +242,11 @@ WNDCLASSEX Application::CreateWindowClass()
 void Application::InitializeOpenGL()
 {
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);
 	glEnable(GL_CULL_FACE);
-	glClearColor(0, 0, 0, 0);
+	glCullFace(GL_BACK);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -254,19 +254,25 @@ void Application::RepaintWindow()
 {
 	if (mDebugModeEnabled)
 	{
-		glClearColor(mClearColor.r, mClearColor.g, mClearColor.b, mClearColor.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(mpCamera->GetProjectionMatrix()[0]);
+		glLoadMatrixf(mpCamera->GetProjectionMatrix().Transpose()[0]);
 
 		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(mpCamera->GetViewMatrix()[0]);
+		glLoadMatrixf(mpCamera->GetViewMatrix().Transpose()[0]);
+
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LIGHTING);
+
+		glClearColor(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a());
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		mpOpenGLRenderer->Render();
 	}
 	else
 	{
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
+
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 
@@ -287,19 +293,25 @@ void Application::RepaintWindow()
 
 		// TODO: improve
 		glBegin(GL_QUADS);
-		glNormal3f(0, 0, 1);
-		glTexCoord2f(0, 0);   
-		glVertex3f(-1, -1, 0);
-		glTexCoord2f(1, 0);   
-		glVertex3f(1, -1, 0);
-		glTexCoord2f(1, 1);   
-		glVertex3f(1, 1, 0);
-		glTexCoord2f(0, 1);   
-		glVertex3f(-1, 1, 0);
-		glEnd();
+			glTexCoord2f(0, 0);   
+			glNormal3f(0, 0, 1);
+			glVertex3f(-1, -1, 0);
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+			glTexCoord2f(1, 0);   
+			glNormal3f(0, 0, 1);
+			glVertex3f(1, -1, 0);
+
+			glTexCoord2f(1, 1);   
+			glNormal3f(0, 0, 1);
+			glVertex3f(1, 1, 0);
+
+			glTexCoord2f(0, 1); 
+			glNormal3f(0, 0, 1);
+			glVertex3f(-1, 1, 0);
+		glEnd();
 	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	SwapBuffers(mDeviceContextHandle);
 }

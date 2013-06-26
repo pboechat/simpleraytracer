@@ -37,9 +37,9 @@ struct OBB : public BoundingVolume
 		{
 			Vector3F& rV1 = rPoints[i] - centroid;
 
-			float m11 = rV1.x * rV1.x; float m12 = rV1.x * rV1.y; float m13 = rV1.x * rV1.z;
-			float m21 = m12; float m22 = rV1.y * rV1.y; float m23 = rV1.y * rV1.z;
-			float m31 = m13; float m32 = m23; float m33 = rV1.z * rV1.z;
+			float m11 = rV1.x() * rV1.x(); float m12 = rV1.x() * rV1.y(); float m13 = rV1.x() * rV1.z();
+			float m21 = m12; float m22 = rV1.y() * rV1.y(); float m23 = rV1.y() * rV1.z();
+			float m31 = m13; float m32 = m23; float m33 = rV1.z() * rV1.z();
 
 			covariance += Matrix3F(m11, m12, m13,
 								   m21, m22, m23,
@@ -58,13 +58,13 @@ struct OBB : public BoundingVolume
 		{
 			Vector3F vector(axis[0].Dot(rPoints[i]), axis[1].Dot(rPoints[i]), axis[2].Dot(rPoints[i]));
 
-			minValues.x = min(vector.x, minValues.x);
-			minValues.y = min(vector.y, minValues.y);
-			minValues.z = min(vector.z, minValues.z);
+			minValues.x() = min(vector.x(), minValues.x());
+			minValues.y() = min(vector.y(), minValues.y());
+			minValues.z() = min(vector.z(), minValues.z());
 			
-			maxValues.x = max(vector.x, maxValues.x);
-			maxValues.y = max(vector.y, maxValues.y);
-			maxValues.z = max(vector.z, maxValues.z);
+			maxValues.x() = max(vector.x(), maxValues.x());
+			maxValues.y() = max(vector.y(), maxValues.y());
+			maxValues.z() = max(vector.z(), maxValues.z());
 		}
 
 		center = (maxValues + minValues) / 2.0f;
@@ -80,17 +80,17 @@ struct OBB : public BoundingVolume
 		Vector3F rayOrigin(axis[0].Dot(rRay.origin), axis[1].Dot(rRay.origin), axis[2].Dot(rRay.origin));
 		Vector3F rayDirection(axis[0].Dot(rRay.direction), axis[1].Dot(rRay.direction), axis[2].Dot(rRay.direction));
 
-		if (!RaySlabIntersection(rayOrigin.x, rayDirection.x, mCurrentMinimums.x, mCurrentMaximums.x, t0, t1)) 
+		if (!RaySlabIntersection(rayOrigin.x(), rayDirection.x(), mCurrentMinimums.x(), mCurrentMaximums.x(), t0, t1)) 
 		{
 			return false;
 		}
 
-		if (!RaySlabIntersection(rayOrigin.y, rayDirection.y, mCurrentMinimums.y, mCurrentMaximums.y, t0, t1)) 
+		if (!RaySlabIntersection(rayOrigin.y(), rayDirection.y(), mCurrentMinimums.y(), mCurrentMaximums.y(), t0, t1)) 
 		{
 			return false;
 		}
 		
-		if (!RaySlabIntersection(rayOrigin.z, rayDirection.z, mCurrentMinimums.z, mCurrentMaximums.z, t0, t1)) 
+		if (!RaySlabIntersection(rayOrigin.z(), rayDirection.z(), mCurrentMinimums.z(), mCurrentMaximums.z(), t0, t1)) 
 		{
 			return false;
 		}

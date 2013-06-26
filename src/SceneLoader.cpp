@@ -195,9 +195,9 @@ void SceneLoader::ParseMesh(Scene& rScene, std::map<int, SceneObject*>& rSceneOb
 	}
 
 	// TODO: generalize bounding volume creation
-	OBB* pOBB = new OBB();
-	pOBB->Compute(pMesh->vertices);
-	pMesh->boundingVolume = pOBB;
+	BoundingVolume* pBoundingVolume = new BoundingSphere();
+	pBoundingVolume->Compute(pMesh->vertices);
+	pMesh->boundingVolume = pBoundingVolume;
 
 	rSceneObjectIds[id] = pMesh;
 }
@@ -301,7 +301,7 @@ ColorRGBA SceneLoader::GetColorRGBA(rapidxml::xml_node<>* pXmlNode, const char* 
 	if (pColor)
 	{
 		int n;
-		n = sscanf(pColor, "%f, %f, %f, %f", &color.r, &color.g, &color.b, &color.a);
+		n = sscanf(pColor, "%f, %f, %f, %f", &color.r(), &color.g(), &color.b(), &color.a());
 	}
 
 	return color;
@@ -315,7 +315,7 @@ Vector3F SceneLoader::GetVector3F(rapidxml::xml_node<>* pXmlNode, const char* pN
 	if (pVector)
 	{
 		int n;
-		n = sscanf(pVector, "%f, %f, %f", &vector.x, &vector.y, &vector.z);
+		n = sscanf(pVector, "%f, %f, %f", &vector.x(), &vector.y(), &vector.z());
 		if (n < 1)
 		{
 			throw std::exception("invalid attribute size");

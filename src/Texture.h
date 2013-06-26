@@ -34,8 +34,8 @@ struct Texture
 
 	ColorRGBA Fetch(const Vector2F& rUV)
 	{
-		unsigned int x = static_cast<unsigned int>(rUV.x * (width - 1));
-		unsigned int y = static_cast<unsigned int>((1 - rUV.y) * (height - 1));
+		unsigned int x = static_cast<unsigned int>(rUV.x() * (width - 1));
+		unsigned int y = static_cast<unsigned int>((1 - rUV.y()) * (height - 1));
 		unsigned int i = (y * width + x) * 4;
 		unsigned char r = data[i];
 		unsigned char g = data[i + 1];

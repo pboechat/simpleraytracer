@@ -53,7 +53,7 @@ struct Sphere : public SceneObject
 
 		// Spherical Mapping with Normals:
 		// http://www.mvps.org/directx/articles/spheremap.htm
-		rHit.uv = Vector2F(asin(rHit.normal.x) / PI + 0.5f, asin(rHit.normal.y) / PI + 0.5f);
+		rHit.uv = Vector2F(asin(rHit.normal.x()) / PI + 0.5f, asin(rHit.normal.y()) / PI + 0.5f);
 
 		return true;
 	}

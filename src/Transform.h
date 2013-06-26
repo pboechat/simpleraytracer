@@ -3,6 +3,7 @@
 
 #include "Vector3F.h"
 #include "Matrix3x3F.h"
+#include "Matrix4x4F.h"
 
 struct Transform
 {

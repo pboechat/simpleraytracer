@@ -3,34 +3,53 @@
 
 struct Vector2F
 {
-	float x;
-	float y;
+	//////////////////////////////////////////////////////////////////////////
+	inline float& x()
+	{
+		return mValues[0];
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	Vector2F() :
-		x(0),
-		y(0)
+	inline float& y()
 	{
+		return mValues[1];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline const float& x() const
+	{
+		return mValues[0];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline const float& y() const
+	{
+		return mValues[1];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	Vector2F()
+	{
+		mValues[0] = mValues[1] = 0.0f;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	Vector2F(float x, float y)
 	{
-		this->x = x;
-		this->y = y;
+		mValues[0] = x; mValues[1] = y;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator + (const Vector2F& rOther) const
 	{
-		return Vector2F(x + rOther.x, y + rOther.y);
+		return Vector2F(mValues[0] + rOther.mValues[0], mValues[1] + rOther.mValues[1]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator += (const Vector2F& rOther)
 	{
-		x += rOther.x;
-		y += rOther.y;
+		mValues[0] += rOther.mValues[0];
+		mValues[1] += rOther.mValues[1];
 
 		return *this;
 	}
@@ -38,14 +57,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator - (const Vector2F& rOther) const
 	{
-		return Vector2F(x - rOther.x, y - rOther.y);
+		return Vector2F(mValues[0] - rOther.mValues[0], mValues[1] - rOther.mValues[1]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator -= (const Vector2F& rOther)
 	{
-		x -= rOther.x;
-		y -= rOther.y;
+		mValues[0] -= rOther.mValues[0];
+		mValues[1] -= rOther.mValues[1];
 
 		return *this;
 	}
@@ -53,14 +72,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator * (const Vector2F& rOther) const
 	{
-		return Vector2F(x * rOther.x, y * rOther.y);
+		return Vector2F(mValues[0] * rOther.mValues[0], mValues[1] * rOther.mValues[1]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator *= (const Vector2F& rOther)
 	{
-		x *= rOther.x;
-		y *= rOther.y;
+		mValues[0] *= rOther.mValues[0];
+		mValues[1] *= rOther.mValues[1];
 
 		return *this;
 	}
@@ -68,14 +87,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator + (float scalar) const
 	{
-		return Vector2F(x + scalar, y + scalar);
+		return Vector2F(mValues[0] + scalar, mValues[1] + scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator += (float scalar)
 	{
-		x += scalar;
-		y += scalar;
+		mValues[0] += scalar;
+		mValues[1] += scalar;
 
 		return *this;
 	}
@@ -83,14 +102,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator - (float scalar) const
 	{
-		return Vector2F(x - scalar, y - scalar);
+		return Vector2F(mValues[0] - scalar, mValues[1] - scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator -= (float scalar)
 	{
-		x -= scalar;
-		y -= scalar;
+		mValues[0] -= scalar;
+		mValues[1] -= scalar;
 
 		return *this;
 	}
@@ -98,14 +117,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator * (float scalar) const
 	{
-		return Vector2F(x * scalar, y * scalar);
+		return Vector2F(mValues[0] * scalar, mValues[1] * scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator *= (float scalar)
 	{
-		x *= scalar;
-		y *= scalar;
+		mValues[0] *= scalar;
+		mValues[1] *= scalar;
 
 		return *this;
 	}
@@ -113,14 +132,14 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F operator / (float scalar) const
 	{
-		return Vector2F(x / scalar, y / scalar);
+		return Vector2F(mValues[0] / scalar, mValues[1] / scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator /= (float scalar)
 	{
-		x /= scalar;
-		y /= scalar;
+		mValues[0] /= scalar;
+		mValues[1] /= scalar;
 
 		return *this;
 	}
@@ -128,23 +147,32 @@ struct Vector2F
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator == (const Vector2F& rOther) const
 	{
-		return x == rOther.x && y == rOther.y;
+		return mValues[0] == rOther.mValues[0] && mValues[1] == rOther.mValues[1];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator != (const Vector2F& rOther) const
 	{
-		return x != rOther.x || y != rOther.y;
+		return mValues[0] != rOther.mValues[0] || mValues[1] != rOther.mValues[1];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector2F& operator = (const Vector2F& rOther)
 	{
-		x = rOther.x;
-		y = rOther.y;
+		mValues[0] = rOther.mValues[0];
+		mValues[1] = rOther.mValues[1];
 
 		return *this;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline float& operator[] (unsigned int i)
+	{
+		return mValues[i];
+	}
+
+private:
+	float mValues[2];
 
 };
 

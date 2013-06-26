@@ -77,6 +77,7 @@
     <ClCompile Include="src\TinyObjLoader.cpp" />
     <ClCompile Include="src\Vector2F.cpp" />
     <ClCompile Include="src\Vector3F.cpp" />
+    <ClCompile Include="src\Vector4F.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
@@ -116,6 +117,7 @@
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Vector2F.h" />
     <ClInclude Include="src\Vector3F.h" />
+    <ClInclude Include="src\Vector4F.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scenes\scene1.xml" />

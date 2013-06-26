@@ -1,42 +1,80 @@
 #ifndef VECTOR3F_H_
 #define VECTOR3F_H_
 
+#include "Vector4F.h"
+
 #include <cmath>
 
 struct Vector3F
 {
-	float x;
-	float y;
-	float z;
+	//////////////////////////////////////////////////////////////////////////
+	inline float& x()
+	{
+		return mValues[0];
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	Vector3F() :
-		x(0),
-		y(0),
-		z(0)
+	inline float& y()
 	{
+		return mValues[1];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline float& z()
+	{
+		return mValues[2];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline const float& x() const
+	{
+		return mValues[0];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline const float& y() const
+	{
+		return mValues[1];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline const float& z() const
+	{
+		return mValues[2];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	Vector3F()
+	{
+		mValues[0] = mValues[1] = mValues[2] = 0.0f;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	Vector3F(float x, float y, float z)
 	{
-		this->x = x;
-		this->y = y;
-		this->z = z;
+		mValues[0] = x; mValues[1] = y; mValues[2] = z;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	Vector3F(const Vector4F& rVector4F)
+	{
+		mValues[0] = rVector4F.x() / rVector4F.w();
+		mValues[1] = rVector4F.y() / rVector4F.w();
+		mValues[2] = rVector4F.z() / rVector4F.w();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator + (const Vector3F& rOther) const
 	{
-		return Vector3F(x + rOther.x, y + rOther.y, z + rOther.z);
+		return Vector3F(mValues[0] + rOther.mValues[0], mValues[1] + rOther.mValues[1], mValues[2] + rOther.mValues[2]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator += (const Vector3F& rOther)
 	{
-		x += rOther.x;
-		y += rOther.y;
-		z += rOther.z;
+		mValues[0] += rOther.mValues[0];
+		mValues[1] += rOther.mValues[1];
+		mValues[2] += rOther.mValues[2];
 
 		return *this;
 	}
@@ -44,15 +82,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator - (const Vector3F& rOther) const
 	{
-		return Vector3F(x - rOther.x, y - rOther.y, z - rOther.z);
+		return Vector3F(mValues[0] - rOther.mValues[0], mValues[1] - rOther.mValues[1], mValues[2] - rOther.mValues[2]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator -= (const Vector3F& rOther)
 	{
-		x -= rOther.x;
-		y -= rOther.y;
-		z -= rOther.z;
+		mValues[0] -= rOther.mValues[0];
+		mValues[1] -= rOther.mValues[1];
+		mValues[2] -= rOther.mValues[2];
 
 		return *this;
 	}
@@ -60,15 +98,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator * (const Vector3F& rOther) const
 	{
-		return Vector3F(x * rOther.x, y * rOther.y, z * rOther.z);
+		return Vector3F(mValues[0] * rOther.mValues[0], mValues[1] * rOther.mValues[1], mValues[2] * rOther.mValues[2]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator *= (const Vector3F& rOther)
 	{
-		x *= rOther.x;
-		y *= rOther.y;
-		z *= rOther.z;
+		mValues[0] *= rOther.mValues[0];
+		mValues[1] *= rOther.mValues[1];
+		mValues[2] *= rOther.mValues[2];
 
 		return *this;
 	}
@@ -76,15 +114,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator + (float scalar) const
 	{
-		return Vector3F(x + scalar, y + scalar, z + scalar);
+		return Vector3F(mValues[0] + scalar, mValues[1] + scalar, mValues[2] + scalar);
 	}
 	
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator += (float scalar)
 	{
-		x += scalar;
-		y += scalar;
-		z += scalar;
+		mValues[0] += scalar;
+		mValues[1] += scalar;
+		mValues[2] += scalar;
 
 		return *this;
 	}
@@ -92,15 +130,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator - (float scalar) const
 	{
-		return Vector3F(x - scalar, y - scalar, z - scalar);
+		return Vector3F(mValues[0] - scalar, mValues[1] - scalar, mValues[2] - scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator -= (float scalar)
 	{
-		x -= scalar;
-		y -= scalar;
-		z -= scalar;
+		mValues[0] -= scalar;
+		mValues[1] -= scalar;
+		mValues[2] -= scalar;
 
 		return *this;
 	}
@@ -108,15 +146,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator * (float scalar) const
 	{
-		return Vector3F(x * scalar, y * scalar, z * scalar);
+		return Vector3F(mValues[0] * scalar, mValues[1] * scalar, mValues[2] * scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator *= (float scalar)
 	{
-		x *= scalar;
-		y *= scalar;
-		z *= scalar;
+		mValues[0] *= scalar;
+		mValues[1] *= scalar;
+		mValues[2] *= scalar;
 
 		return *this;
 	}
@@ -124,15 +162,15 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F operator / (float scalar) const
 	{
-		return Vector3F(x / scalar, y / scalar, z / scalar);
+		return Vector3F(mValues[0] / scalar, mValues[1] / scalar, mValues[2] / scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator /= (float scalar)
 	{
-		x /= scalar;
-		y /= scalar;
-		z /= scalar;
+		mValues[0] /= scalar;
+		mValues[1] /= scalar;
+		mValues[2] /= scalar;
 
 		return *this;
 	}
@@ -140,56 +178,44 @@ struct Vector3F
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator == (const Vector3F& rOther) const
 	{
-		return x == rOther.x && y == rOther.y && z == rOther.z;
+		return mValues[0] == rOther.mValues[0] && mValues[1] == rOther.mValues[1] && mValues[2] == rOther.mValues[2];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator != (const Vector3F& rOther) const
 	{
-		return x != rOther.x || y != rOther.y || z != rOther.z;
+		return mValues[0] != rOther.mValues[0] || mValues[1] != rOther.mValues[1] || mValues[2] != rOther.mValues[2];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F& operator = (const Vector3F& rOther)
 	{
-		x = rOther.x;
-		y = rOther.y;
-		z = rOther.z;
+		mValues[0] = rOther.mValues[0];
+		mValues[1] = rOther.mValues[1];
+		mValues[2] = rOther.mValues[2];
 
 		return *this;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	inline float operator[] (unsigned int i)
+	inline float& operator[] (unsigned int i)
 	{
-		i = i % 3;
-		if (i == 0)
-		{
-			return x;
-		}
-		else if (i == 1)
-		{
-			return y;
-		}
-		else 
-		{
-			return z;
-		}
+		return mValues[i];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline float Distance(const Vector3F& rOther) const
 	{
-		float x1 = rOther.x - x;
-		float y1 = rOther.y - y;
-		float z1 = rOther.z - z;
+		float x1 = rOther.mValues[0] - mValues[0];
+		float y1 = rOther.mValues[1] - mValues[1];
+		float z1 = rOther.mValues[2] - mValues[2];
 		return sqrt(x1 * x1 + y1 * y1 + z1 * z1);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline float Length() const
 	{
-		return sqrt(x * x + y * y + z * z);
+		return sqrt(mValues[0] * mValues[0] + mValues[1] * mValues[1] + mValues[2] * mValues[2]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -202,30 +228,30 @@ struct Vector3F
 	inline void Normalize()
 	{
 		float length = Length();
-		x /= length;
-		y /= length;
-		z /= length;
+		mValues[0] /= length;
+		mValues[1] /= length;
+		mValues[2] /= length;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F Normalized()
 	{
 		float length = Length();
-		return Vector3F(x / length, y / length, z / length);
+		return Vector3F(mValues[0] / length, mValues[1] / length, mValues[2] / length);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline float Dot(const Vector3F& rOther) const
 	{
-		return x * rOther.x + y * rOther.y + z * rOther.z;
+		return mValues[0] * rOther.mValues[0] + mValues[1] * rOther.mValues[1] + mValues[2] * rOther.mValues[2];
 	}
 	
 	//////////////////////////////////////////////////////////////////////////
 	inline Vector3F Cross(const Vector3F& rOther) const
 	{
-		return Vector3F(y * rOther.z - z * rOther.y,
-						z * rOther.x - x * rOther.z,
-						x * rOther.y - y * rOther.x);
+		return Vector3F(mValues[1] * rOther.mValues[2] - mValues[2] * rOther.mValues[1],
+						mValues[2] * rOther.mValues[0] - mValues[0] * rOther.mValues[2],
+						mValues[0] * rOther.mValues[1] - mValues[1] * rOther.mValues[0]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -233,6 +259,9 @@ struct Vector3F
 	{
 		return acos(Dot(rOther) / (Length() * rOther.Length()));
 	}
+
+private:
+	float mValues[3];
 
 };
 
