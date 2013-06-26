@@ -1,7 +1,10 @@
 #ifndef VECTOR3F_H_
 #define VECTOR3F_H_
 
+#include "Vector4F.h"
+
 #include <cmath>
+#include <exception>
 
 struct Vector3F
 {
@@ -23,6 +26,14 @@ struct Vector3F
 		this->x = x;
 		this->y = y;
 		this->z = z;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	Vector3F(const Vector4F& rVector4F)
+	{
+		x = rVector4F.x / rVector4F.w;
+		y = rVector4F.y / rVector4F.w;
+		z = rVector4F.z / rVector4F.w;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -171,9 +182,13 @@ struct Vector3F
 		{
 			return y;
 		}
-		else 
+		else if (i == 2)
 		{
 			return z;
+		}
+		else
+		{
+			throw std::exception("invalid index");
 		}
 	}
 

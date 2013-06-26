@@ -2,6 +2,7 @@
 #define CAMERA_H_
 
 #include "Vector3F.h"
+#include "Vector4F.h"
 #include "Matrix4x4F.h"
 #include "Ray.h"
 
@@ -20,11 +21,11 @@ public:
 	{
 	}
 
-	inline void SetParameters(float fov, float nearZ, float farZ, const Vector3F& rEyePosition, const Vector3F& rForward, const Vector3F rUp)
+	inline void SetParameters(float fov, float zNear, float zFar, const Vector3F& rEyePosition, const Vector3F& rForward, const Vector3F rUp)
 	{
-		mFoV = fov;
-		mNear = nearZ;
-		mFar = farZ;
+		mFov = fov;
+		mNear = zNear;
+		mFar = zFar;
 
 		mEyePosition = rEyePosition;
 		mForward = rForward;
@@ -33,6 +34,11 @@ public:
 		mZ = (rEyePosition - rForward).Normalized();
 		mX = rUp.Cross(mZ);
 		mY = mZ.Cross(mX);
+
+		mViewMatrix = Matrix4F(Vector4F(mX.x, mX.y, mX.z, 0), Vector4F(mY.x, mY.y, mY.z, 0), Vector4F(mZ.x, mZ.y, mZ.z, 0), Vector4F(0, 0, 0, 1)) * Matrix4F(1, 0, 0, 0,
+																																							 0, 1, 0, 0,
+																																							 0, 0, 1, 0,
+																																							 -mEyePosition.x, -mEyePosition.y, -mEyePosition.z, 1);
 	}
 
 	inline void SetViewport(unsigned int width, unsigned int height)
@@ -40,8 +46,14 @@ public:
 		mWidth = width;
 		mHeight = height;
 		mAspectRatio = mWidth / (float)mHeight;
-		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(DEG2RAD * mFoV / 2.0f));
+		mProjectionPlaneHeight = (float)(2.0 * mNear * tan(DEG2RAD * mFov / 2.0f));
 		mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
+
+		float f = 1.0f / tan(DEG2RAD * mFov / 2.0f);
+		mProjectionMatrix = Matrix4F(f / mAspectRatio, 0, 0, 0,
+			0, f, 0, 0,
+			0, 0, (mFar + mNear) / (mNear - mFar), (2 * mFar * mNear) / (mNear - mFar),
+			0, 0, -1, 0);
 	}
 
 	inline unsigned int GetWidth() const
@@ -69,16 +81,14 @@ public:
 		return mEyePosition;
 	}
 
-	inline Matrix4x4F GetProjectionMatrix() const
+	inline const Matrix4F& GetProjectionMatrix() const
 	{
-		// TODO:
-		return Matrix4x4F();
+		return mProjectionMatrix;
 	}
 
-	inline Matrix4x4F GetViewMatrix() const
+	inline const Matrix4F& GetViewMatrix() const
 	{
-		// TODO:
-		return Matrix4x4F();
+		return mViewMatrix;
 	}
 
 	inline Ray GetRayFromScreenCoordinates(unsigned int x, unsigned int y) const
@@ -94,9 +104,11 @@ private:
 	Vector3F mX;
 	Vector3F mY;
 	Vector3F mZ;
-	float mFoV;
+	float mFov;
 	float mNear;
 	float mFar;
+	Matrix4F mProjectionMatrix;
+	Matrix4F mViewMatrix;
 	unsigned int mWidth;
 	unsigned int mHeight;
 	float mAspectRatio;

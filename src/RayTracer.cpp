@@ -12,22 +12,22 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
 #define clamp(v, vmin, vmax) \
-	(v).r = (((v).r < (vmin)) ? (vmin) : (((v).r > (vmax)) ? (vmax) : (v).r)); \
-	(v).g = (((v).g < (vmin)) ? (vmin) : (((v).g > (vmax)) ? (vmax) : (v).g)); \
-	(v).b = (((v).b < (vmin)) ? (vmin) : (((v).b > (vmax)) ? (vmax) : (v).b)); \
-	(v).a = (((v).a < (vmin)) ? (vmin) : (((v).a > (vmax)) ? (vmax) : (v).a))
+	(v).r() = (((v).r() < (vmin)) ? (vmin) : (((v).r() > (vmax)) ? (vmax) : (v).r())); \
+	(v).g() = (((v).g() < (vmin)) ? (vmin) : (((v).g() > (vmax)) ? (vmax) : (v).g())); \
+	(v).b() = (((v).b() < (vmin)) ? (vmin) : (((v).b() > (vmax)) ? (vmax) : (v).b())); \
+	(v).a() = (((v).a() < (vmin)) ? (vmin) : (((v).a() > (vmax)) ? (vmax) : (v).a()))
 
 #define set(colorBuffer, i, c) \
-	(colorBuffer)[(i)] = static_cast<unsigned char>((c).r * 255.0); \
-	(colorBuffer)[(i) + 1] = static_cast<unsigned char>((c).g * 255.0); \
-	(colorBuffer)[(i) + 2] = static_cast<unsigned char>((c).b * 255.0); \
+	(colorBuffer)[(i)] = static_cast<unsigned char>((c).r() * 255.0); \
+	(colorBuffer)[(i) + 1] = static_cast<unsigned char>((c).g() * 255.0); \
+	(colorBuffer)[(i) + 2] = static_cast<unsigned char>((c).b() * 255.0); \
 	(colorBuffer)[(i) + 3] = 255
 
 #define get(colorBuffer, i, c) \
-	(c).r = (colorBuffer)[(i)] / 255.0f; \
-	(c).g = (colorBuffer)[(i) + 1] / 255.0f; \
-	(c).b = (colorBuffer)[(i) + 2] / 255.0f; \
-	(c).a = (colorBuffer)[(i) + 3] / 255.0f
+	(c).r() = (colorBuffer)[(i)] / 255.0f; \
+	(c).g() = (colorBuffer)[(i) + 1] / 255.0f; \
+	(c).b() = (colorBuffer)[(i) + 2] / 255.0f; \
+	(c).a() = (colorBuffer)[(i) + 3] / 255.0f
 
 //////////////////////////////////////////////////////////////////////////
 RayTracer::RayTracer(const Camera* pCamera, const Scene* pScene, const ColorRGBA& rClearColor, const ColorRGBA& rAmbientLight) :

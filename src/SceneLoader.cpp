@@ -300,7 +300,7 @@ ColorRGBA SceneLoader::GetColorRGBA(rapidxml::xml_node<>* pXmlNode, const char* 
 	if (pColor)
 	{
 		int n;
-		n = sscanf(pColor, "%f, %f, %f, %f", &color.r, &color.g, &color.b, &color.a);
+		n = sscanf(pColor, "%f, %f, %f, %f", &color.r(), &color.g(), &color.b(), &color.a());
 	}
 
 	return color;

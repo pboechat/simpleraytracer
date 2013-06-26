@@ -22,15 +22,9 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	Matrix3x3F(const Vector3F& column1, const Vector3F& column2, const Vector3F& column3)
 	{
-		mMatrix[0] = column1.x;
-		mMatrix[1] = column2.x;
-		mMatrix[2] = column3.x;
-		mMatrix[3] = column1.y;
-		mMatrix[4] = column2.y;
-		mMatrix[5] = column3.y;
-		mMatrix[6] = column1.z;
-		mMatrix[7] = column2.z;
-		mMatrix[8] = column3.z;
+		mMatrix[0] = column1.x; mMatrix[3] = column1.y; mMatrix[6] = column1.z;
+		mMatrix[1] = column2.x; mMatrix[4] = column2.y; mMatrix[7] = column2.z;
+		mMatrix[2] = column3.x;	mMatrix[5] = column3.y;	mMatrix[8] = column3.z;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -61,11 +55,6 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	inline Matrix3x3F operator * (const Matrix3x3F& rOther) const
 	{
-		/*
-		* |a11b11 + a12b21 + a13b31            a11b12 + a12b22 + a13b32                a11b13 + a12b23 + a13b33|
-		* |a21b11 + a22b21 + a23b31            a21b12 + a22b22 + a23b32                a21b13 + a22b23 + a23b33|
-		* |a31b11 + a32b21 + a33b31            a31b12 + a32b22 + a33b32                a31b13 + a32b23 + a33b33|
-		*/
 		float m11 = mMatrix[0] * rOther.mMatrix[0] + mMatrix[1] * rOther.mMatrix[3] + mMatrix[2] * rOther.mMatrix[6];
 		float m12 = mMatrix[0] * rOther.mMatrix[1] + mMatrix[1] * rOther.mMatrix[4] + mMatrix[2] * rOther.mMatrix[7];
 		float m13 = mMatrix[0] * rOther.mMatrix[2] + mMatrix[1] * rOther.mMatrix[5] + mMatrix[2] * rOther.mMatrix[8];
@@ -82,11 +71,6 @@ struct Matrix3x3F
 
 	inline Matrix3x3F& operator *= (const Matrix3x3F& rOther)
 	{
-		/*
-		* |a11b11 + a12b21 + a13b31            a11b12 + a12b22 + a13b32                a11b13 + a12b23 + a13b33|
-		* |a21b11 + a22b21 + a23b31            a21b12 + a22b22 + a23b32                a21b13 + a22b23 + a23b33|
-		* |a31b11 + a32b21 + a33b31            a31b12 + a32b22 + a33b32                a31b13 + a32b23 + a33b33|
-		*/
 		float m11 = mMatrix[0] * rOther.mMatrix[0] + mMatrix[1] * rOther.mMatrix[3] + mMatrix[2] * rOther.mMatrix[6];
 		float m12 = mMatrix[0] * rOther.mMatrix[1] + mMatrix[1] * rOther.mMatrix[4] + mMatrix[2] * rOther.mMatrix[7];
 		float m13 = mMatrix[0] * rOther.mMatrix[2] + mMatrix[1] * rOther.mMatrix[5] + mMatrix[2] * rOther.mMatrix[8];

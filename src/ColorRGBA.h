@@ -5,42 +5,75 @@ struct ColorRGBA
 {
 	static const ColorRGBA WHITE;
 
-	float r;
-	float g;
-	float b;
-	float a;
+	inline float& r()
+	{
+		return mValues[0];
+	}
+
+	inline float& g()
+	{
+		return mValues[1];
+	}
+
+	inline float& b()
+	{
+		return mValues[2];
+	}
+
+	inline float& a()
+	{
+		return mValues[3];
+	}
+
+	inline const float& r() const
+	{
+		return mValues[0];
+	}
+
+	inline const float& g() const
+	{
+		return mValues[1];
+	}
+
+	inline const float& b() const
+	{
+		return mValues[2];
+	}
+
+	inline const float& a() const
+	{
+		return mValues[3];
+	}
 
 	//////////////////////////////////////////////////////////////////////////
-	ColorRGBA() :
-		r(0),
-		g(0),
-		b(0),
-		a(1)
+	ColorRGBA()
 	{
+		mValues[0] = mValues[1] = mValues[2] = 0.0f;
+		mValues[3] = 1.0f;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	ColorRGBA(float r, float g, float b, float a)
 	{
-		this->r = r;
-		this->g = g;
-		this->b = b;
-		this->a = a;
+		this->mValues[0] = r;
+		this->mValues[1] = g;
+		this->mValues[2] = b;
+		this->mValues[3] = a;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator + (const ColorRGBA& rOther) const
 	{
-		return ColorRGBA(r + rOther.r, g + rOther.g, b + rOther.b, a + rOther.a);
+		return ColorRGBA(mValues[0] + rOther.mValues[0], mValues[1] + rOther.mValues[1], mValues[2] + rOther.mValues[2], mValues[3] + rOther.mValues[3]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator += (const ColorRGBA& rOther)
 	{
-		r += rOther.r;
-		g += rOther.g;
-		b += rOther.b;
-		a += rOther.a;
+		mValues[0] += rOther.mValues[0];
+		mValues[1] += rOther.mValues[1];
+		mValues[2] += rOther.mValues[2];
+		mValues[3] += rOther.mValues[3];
 
 		return *this;
 	}
@@ -48,16 +81,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator - (const ColorRGBA& rOther) const
 	{
-		return ColorRGBA(r - rOther.r, g - rOther.g, b - rOther.b, a - rOther.a);
+		return ColorRGBA(mValues[0] - rOther.mValues[0], mValues[1] - rOther.mValues[1], mValues[2] - rOther.mValues[2], mValues[3] - rOther.mValues[3]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator -= (const ColorRGBA& rOther)
 	{
-		r -= rOther.r;
-		g -= rOther.g;
-		b -= rOther.b;
-		a -= rOther.a;
+		mValues[0] -= rOther.mValues[0];
+		mValues[1] -= rOther.mValues[1];
+		mValues[2] -= rOther.mValues[2];
+		mValues[3] -= rOther.mValues[3];
 
 		return *this;
 	}
@@ -65,16 +98,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator * (const ColorRGBA& rOther) const
 	{
-		return ColorRGBA(r * rOther.r, g * rOther.g, b * rOther.b, a * rOther.a);
+		return ColorRGBA(mValues[0] * rOther.mValues[0], mValues[1] * rOther.mValues[1], mValues[2] * rOther.mValues[2], mValues[3] * rOther.mValues[3]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator *= (const ColorRGBA& rOther)
 	{
-		r *= rOther.r;
-		g *= rOther.g;
-		b *= rOther.b;
-		a *= rOther.a;
+		mValues[0] *= rOther.mValues[0];
+		mValues[1] *= rOther.mValues[1];
+		mValues[2] *= rOther.mValues[2];
+		mValues[3] *= rOther.mValues[3];
 
 		return *this;
 	}
@@ -82,16 +115,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator + (float scalar) const
 	{
-		return ColorRGBA(r + scalar, g + scalar, b + scalar, a + scalar);
+		return ColorRGBA(mValues[0] + scalar, mValues[1] + scalar, mValues[2] + scalar, mValues[3] + scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator += (float scalar)
 	{
-		r += scalar;
-		g += scalar;
-		b += scalar;
-		a += scalar;
+		mValues[0] += scalar;
+		mValues[1] += scalar;
+		mValues[2] += scalar;
+		mValues[3] += scalar;
 
 		return *this;
 	}
@@ -99,16 +132,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator - (float scalar) const
 	{
-		return ColorRGBA(r - scalar, g - scalar, b - scalar, a - scalar);
+		return ColorRGBA(mValues[0] - scalar, mValues[1] - scalar, mValues[2] - scalar, mValues[3] - scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator -= (float scalar)
 	{
-		r -= scalar;
-		g -= scalar;
-		b -= scalar;
-		a -= scalar;
+		mValues[0] -= scalar;
+		mValues[1] -= scalar;
+		mValues[2] -= scalar;
+		mValues[3] -= scalar;
 
 		return *this;
 	}
@@ -116,16 +149,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator * (float scalar) const
 	{
-		return ColorRGBA(r * scalar, g * scalar, b * scalar, a * scalar);
+		return ColorRGBA(mValues[0] * scalar, mValues[1] * scalar, mValues[2] * scalar, mValues[3] * scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator *= (float scalar)
 	{
-		r *= scalar;
-		g *= scalar;
-		b *= scalar;
-		a *= scalar;
+		mValues[0] *= scalar;
+		mValues[1] *= scalar;
+		mValues[2] *= scalar;
+		mValues[3] *= scalar;
 
 		return *this;
 	}
@@ -133,16 +166,16 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA operator / (float scalar) const
 	{
-		return ColorRGBA(r / scalar, g / scalar, b / scalar, a / scalar);
+		return ColorRGBA(mValues[0] / scalar, mValues[1] / scalar, mValues[2] / scalar, mValues[3] / scalar);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator /= (float scalar)
 	{
-		r /= scalar;
-		g /= scalar;
-		b /= scalar;
-		a /= scalar;
+		mValues[0] /= scalar;
+		mValues[1] /= scalar;
+		mValues[2] /= scalar;
+		mValues[3] /= scalar;
 
 		return *this;
 	}
@@ -150,32 +183,41 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator == (const ColorRGBA& rOther) const
 	{
-		return r == rOther.r && g == rOther.g && b == rOther.b && a == rOther.a;
+		return mValues[0] == rOther.mValues[0] && mValues[1] == rOther.mValues[1] && mValues[2] == rOther.mValues[2] && mValues[3] == rOther.mValues[3];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline bool operator != (const ColorRGBA& rOther) const
 	{
-		return r != rOther.r || g != rOther.g || b != rOther.b || a != rOther.a;
+		return mValues[0] != rOther.mValues[0] || mValues[1] != rOther.mValues[1] || mValues[2] != rOther.mValues[2] || mValues[3] != rOther.mValues[3];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA& operator = (const ColorRGBA& rOther)
 	{
-		r = rOther.r;
-		g = rOther.g;
-		b = rOther.b;
-		a = rOther.a;
+		mValues[0] = rOther.mValues[0];
+		mValues[1] = rOther.mValues[1];
+		mValues[2] = rOther.mValues[2];
+		mValues[3] = rOther.mValues[3];
 
 		return *this;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline float* operator[] (unsigned int i)
+	{
+		return (mValues + i);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA Blend(const ColorRGBA& rDstColor) const
 	{
-		float invA = 1 - a;
-		return ColorRGBA(a * r + invA * rDstColor.r, a * g + invA * rDstColor.g, a * b + invA * rDstColor.b, a * a + invA * rDstColor.a);
+		float invA = 1 - mValues[3];
+		return ColorRGBA(mValues[3] * mValues[0] + invA * rDstColor.mValues[0], mValues[3] * mValues[1] + invA * rDstColor.mValues[1], mValues[3] * mValues[2] + invA * rDstColor.mValues[2], mValues[3] * mValues[3] + invA * rDstColor.mValues[3]);
 	}
+
+private:
+	float mValues[4];
 
 };
 
