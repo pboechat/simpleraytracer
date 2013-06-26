@@ -3,6 +3,7 @@
 
 #include "SceneObject.h"
 #include "Vector2F.h"
+#include "BoundingVolume.h"
 
 #include <vector>
 #include <string>
@@ -15,6 +16,22 @@ struct Mesh : public SceneObject
 	std::vector<Vector3F> normals;
 	std::vector<Vector2F> uvs;
 	std::vector<unsigned int> indices;
+	BoundingVolume* boundingVolume;
+
+	Mesh() :
+		boundingVolume(0)
+	{
+	}
+
+	virtual void Update()
+	{
+		SceneObject::Update();
+
+		if (boundingVolume != 0)
+		{
+			boundingVolume->Update(mWorldTransform);
+		}
+	}
 
 	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const
 	{

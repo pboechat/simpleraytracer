@@ -8,6 +8,7 @@
 #include "TextureLoader.h"
 #include "StringUtils.h"
 #include "BoundingSphere.h"
+#include "OBB.h"
 
 #include <string.h>
 #include <vector>
@@ -194,9 +195,9 @@ void SceneLoader::ParseMesh(Scene& rScene, std::map<int, SceneObject*>& rSceneOb
 	}
 
 	// TODO: generalize bounding volume creation
-	BoundingSphere* pBoundingSphere = new BoundingSphere();
-	pBoundingSphere->Compute(pMesh->vertices);
-	pMesh->boundingVolume = pBoundingSphere;
+	OBB* pOBB = new OBB();
+	pOBB->Compute(pMesh->vertices);
+	pMesh->boundingVolume = pOBB;
 
 	rSceneObjectIds[id] = pMesh;
 }

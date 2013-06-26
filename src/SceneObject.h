@@ -5,7 +5,6 @@
 #include "RayHit.h"
 #include "Transform.h"
 #include "Material.h"
-#include "BoundingVolume.h"
 
 #include <cmath>
 #include <vector>
@@ -16,22 +15,16 @@ struct SceneObject
 	std::vector<SceneObject*> children;
 	Material material;
 	Transform localTransform;
-	BoundingVolume* boundingVolume;
 
 	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const = 0;
 
-	inline void Update()
+	virtual void Update()
 	{
 		mWorldTransform = localTransform;
 
 		if (parent != 0)
 		{
 			mWorldTransform = parent->mWorldTransform * mWorldTransform;
-		}
-
-		if (boundingVolume != 0)
-		{
-			boundingVolume->Update(mWorldTransform);
 		}
 
 		for (unsigned int i = 0; i < children.size(); i++)
@@ -44,8 +37,7 @@ protected:
 	Transform mWorldTransform;
 
 	SceneObject() :
-		parent(0),
-		boundingVolume(0)
+		parent(0)
 	{
 	}
 

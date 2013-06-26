@@ -22,15 +22,9 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	Matrix3x3F(const Vector3F& column1, const Vector3F& column2, const Vector3F& column3)
 	{
-		mMatrix[0] = column1.x;
-		mMatrix[1] = column2.x;
-		mMatrix[2] = column3.x;
-		mMatrix[3] = column1.y;
-		mMatrix[4] = column2.y;
-		mMatrix[5] = column3.y;
-		mMatrix[6] = column1.z;
-		mMatrix[7] = column2.z;
-		mMatrix[8] = column3.z;
+		mMatrix[0] = column1.x; mMatrix[3] = column1.y; mMatrix[6] = column1.z;
+		mMatrix[1] = column2.x; mMatrix[4] = column2.y; mMatrix[7] = column2.z;
+		mMatrix[2] = column3.x;	mMatrix[5] = column3.y;	mMatrix[8] = column3.z;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -46,7 +40,7 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	inline const float* operator[] (unsigned int i) const
 	{
-		return &mMatrix[0];
+		return &mMatrix[i * 3];
 	}
 
 	//////////////////////////////////////////////////////////////////////////
