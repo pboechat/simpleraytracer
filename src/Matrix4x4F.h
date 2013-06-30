@@ -54,6 +54,12 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline Vector4F GetColumn(unsigned int i) const
+	{
+		return Vector4F(mMatrix[0 + i], mMatrix[4 + i], mMatrix[8 + i], mMatrix[12 + i]);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline Vector4F operator * (const Vector4F& rVector) const
 	{
 		float x = mMatrix[0] * rVector.x() + mMatrix[1] * rVector.y() + mMatrix[2] * rVector.z() + mMatrix[3] * rVector.w();

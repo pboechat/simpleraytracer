@@ -17,17 +17,17 @@
 class SceneLoader
 {
 public:
-	static void LoadFromXML(const std::string& rFileName, Scene& rScene, Camera& rCamera);
+	static Scene* LoadFromXML(const std::string& rFileName);
 
 private:
 	SceneLoader() {}
 	~SceneLoader() {}
 
-	static void Traverse(Scene& rScene, Camera& rCamera, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
-	static void ParseCamera(Camera& rCamera, rapidxml::xml_node<>* pXmlNode);
-	static void ParseLight(Scene& rScene, rapidxml::xml_node<>* pXmlNode);
-	static void ParseSphere(Scene& rScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
-	static void ParseMesh(Scene& rScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
+	static void Traverse(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
+	static void ParseCamera(Scene* pScene, rapidxml::xml_node<>* pXmlNode);
+	static void ParseLight(Scene* pScene, rapidxml::xml_node<>* pXmlNode);
+	static void ParseSphere(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
+	static void ParseMesh(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
 	static char* GetValue(rapidxml::xml_node<>* pXmlNode, const char* pName);
 	static float GetFloat(rapidxml::xml_node<>* pXmlNode, const char* pName);
 	static int GetInt(rapidxml::xml_node<>* pXmlNode, const char* pName);

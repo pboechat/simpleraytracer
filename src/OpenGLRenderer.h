@@ -1,28 +1,40 @@
 #ifndef OPENGLRENDERER_H_
 #define OPENGLRENDERER_H_
 
-#include "Camera.h"
-#include "Scene.h"
+#include "Renderer.h"
 #include "SceneObject.h"
 #include "Sphere.h"
 #include "Mesh.h"
+#include "ColorRGBA.h"
 #include "Matrix4x4F.h"
+#include "RayMetadata.h"
 
 #include <map>
 
-class OpenGLRenderer
+class OpenGLRenderer : public Renderer
 {
 public:
-	OpenGLRenderer(const Camera* pCamera, const Scene* pScene);
-	~OpenGLRenderer();
+	OpenGLRenderer();
+	virtual ~OpenGLRenderer();
 
-	void Render();
+	inline void EnableDebugRay(const RayMetadata& rRayToDebug)
+	{
+		mRayToDebug = rRayToDebug;
+		mDebugRayEnabled = true;
+	}
+
+	inline void DisableDebugRay()
+	{
+		mDebugRayEnabled = false;
+	}
+
+	virtual void Render();
 	
 private:
-	const Camera* mpCamera;
-	const Scene* mpScene;
 	std::map<SceneObject*, unsigned int> mTextureIds;
 	std::map<Sphere*, Mesh*> mSphereMeshes;
+	bool mDebugRayEnabled;
+	RayMetadata mRayToDebug;
 
 	void RenderMesh(Mesh* pMesh);
 	void RenderSphere(Sphere* pSphere);

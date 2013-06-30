@@ -3,9 +3,6 @@
 
 #include "Vector4F.h"
 
-#define ToVector4F(v4, v3) \
-	v4[0] = v3[0]; v4[1] = v3[1]; v4[2] = v3[2]; v4[3] = 1.0f
-
 #include <cmath>
 
 struct Vector3F
@@ -207,6 +204,12 @@ struct Vector3F
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline const float& operator[] (unsigned int i) const
+	{
+		return mValues[i];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline float Distance(const Vector3F& rOther) const
 	{
 		float x1 = rOther.mValues[0] - mValues[0];
@@ -261,6 +264,12 @@ struct Vector3F
 	inline float Angle(const Vector3F& rOther) const
 	{
 		return acos(Dot(rOther) / (Length() * rOther.Length()));
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline Vector4F ToVector4F() const
+	{
+		return Vector4F(mValues[0], mValues[1], mValues[2], 1);
 	}
 
 private:

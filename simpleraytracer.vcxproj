@@ -67,6 +67,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\ColorRGBA.cpp" />
     <ClCompile Include="src\CommandPrompt.cpp" />
     <ClCompile Include="src\EigenSolver.cpp" />
@@ -86,6 +87,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\ColorRGBA.h" />
     <ClInclude Include="src\CommandPrompt.h" />
+    <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\DirectionalLight.h" />
     <ClInclude Include="src\EigenSolver.h" />
     <ClInclude Include="src\FileReader.h" />
@@ -103,6 +105,8 @@
     <ClInclude Include="src\RapidXML.h" />
     <ClInclude Include="src\Ray.h" />
     <ClInclude Include="src\RayHit.h" />
+    <ClInclude Include="src\RayMetadata.h" />
+    <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\SceneLoader.h" />
     <ClInclude Include="src\SceneObject.h" />

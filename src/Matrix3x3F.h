@@ -2,12 +2,7 @@
 #define MATRIX3x3F_H_
 
 #include "Vector3F.h"
-
-#define ToMatrix4x4(m4, m3) \
-	m4[0][0] = m3[0][0];	m4[0][1] = m3[0][1];	m4[0][2] = m3[0][2];	m4[0][3] = 0.0f; \
-	m4[1][0] = m3[1][0];	m4[1][1] = m3[1][1];	m4[1][2] = m3[1][2];	m4[1][3] = 0.0f; \
-	m4[2][0] = m3[2][0];	m4[2][1] = m3[2][1];	m4[2][2] = m3[2][2];	m4[2][3] = 0.0f; \
-	m4[3][0] = 0.0f;		m4[3][1] = 0.0f;		m4[3][2] = 0.0f;		m4[3][3] = 1.0f
+#include "Matrix4x4F.h"
 
 struct Matrix3x3F
 {
@@ -36,11 +31,11 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	Matrix3x3F(float m11, float m12, float m13,
 			   float m21, float m22, float m23,
-			   float m31, float m32, float m33)
+			   float mMatrix1, float mMatrix2, float mMatrix3)
 	{
 		mMatrix[0] = m11; mMatrix[1] = m12;	mMatrix[2] = m13;
 		mMatrix[3] = m21; mMatrix[4] = m22;	mMatrix[5] = m23;
-		mMatrix[6] = m31; mMatrix[7] = m32; mMatrix[8] = m33;
+		mMatrix[6] = mMatrix1; mMatrix[7] = mMatrix2; mMatrix[8] = mMatrix3;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -53,6 +48,12 @@ struct Matrix3x3F
 	inline const float* operator[] (unsigned int i) const
 	{
 		return &mMatrix[i * 3];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline Vector3F GetColumn(unsigned int i) const
+	{
+		return Vector3F(mMatrix[0 + i], mMatrix[3 + i], mMatrix[6 + i]);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -73,12 +74,12 @@ struct Matrix3x3F
 		float m21 = mMatrix[3] * rOther.mMatrix[0] + mMatrix[4] * rOther.mMatrix[3] + mMatrix[5] * rOther.mMatrix[6];
 		float m22 = mMatrix[3] * rOther.mMatrix[1] + mMatrix[4] * rOther.mMatrix[4] + mMatrix[5] * rOther.mMatrix[7];
 		float m23 = mMatrix[3] * rOther.mMatrix[2] + mMatrix[4] * rOther.mMatrix[5] + mMatrix[5] * rOther.mMatrix[8];
-		float m31 = mMatrix[6] * rOther.mMatrix[0] + mMatrix[7] * rOther.mMatrix[3] + mMatrix[8] * rOther.mMatrix[6];
-		float m32 = mMatrix[6] * rOther.mMatrix[1] + mMatrix[7] * rOther.mMatrix[4] + mMatrix[8] * rOther.mMatrix[7];
-		float m33 = mMatrix[6] * rOther.mMatrix[2] + mMatrix[7] * rOther.mMatrix[5] + mMatrix[8] * rOther.mMatrix[8];
+		float mMatrix1 = mMatrix[6] * rOther.mMatrix[0] + mMatrix[7] * rOther.mMatrix[3] + mMatrix[8] * rOther.mMatrix[6];
+		float mMatrix2 = mMatrix[6] * rOther.mMatrix[1] + mMatrix[7] * rOther.mMatrix[4] + mMatrix[8] * rOther.mMatrix[7];
+		float mMatrix3 = mMatrix[6] * rOther.mMatrix[2] + mMatrix[7] * rOther.mMatrix[5] + mMatrix[8] * rOther.mMatrix[8];
 		return Matrix3x3F(m11, m12, m13,
 						  m21, m22, m23,
-						  m31, m32, m33);
+						  mMatrix1, mMatrix2, mMatrix3);
 	}
 
 	inline Matrix3x3F& operator *= (const Matrix3x3F& rOther)
@@ -89,13 +90,13 @@ struct Matrix3x3F
 		float m21 = mMatrix[3] * rOther.mMatrix[0] + mMatrix[4] * rOther.mMatrix[3] + mMatrix[5] * rOther.mMatrix[6];
 		float m22 = mMatrix[3] * rOther.mMatrix[1] + mMatrix[4] * rOther.mMatrix[4] + mMatrix[5] * rOther.mMatrix[7];
 		float m23 = mMatrix[3] * rOther.mMatrix[2] + mMatrix[4] * rOther.mMatrix[5] + mMatrix[5] * rOther.mMatrix[8];
-		float m31 = mMatrix[6] * rOther.mMatrix[0] + mMatrix[7] * rOther.mMatrix[3] + mMatrix[8] * rOther.mMatrix[6];
-		float m32 = mMatrix[6] * rOther.mMatrix[1] + mMatrix[7] * rOther.mMatrix[4] + mMatrix[8] * rOther.mMatrix[7];
-		float m33 = mMatrix[6] * rOther.mMatrix[2] + mMatrix[7] * rOther.mMatrix[5] + mMatrix[8] * rOther.mMatrix[8];
+		float mMatrix1 = mMatrix[6] * rOther.mMatrix[0] + mMatrix[7] * rOther.mMatrix[3] + mMatrix[8] * rOther.mMatrix[6];
+		float mMatrix2 = mMatrix[6] * rOther.mMatrix[1] + mMatrix[7] * rOther.mMatrix[4] + mMatrix[8] * rOther.mMatrix[7];
+		float mMatrix3 = mMatrix[6] * rOther.mMatrix[2] + mMatrix[7] * rOther.mMatrix[5] + mMatrix[8] * rOther.mMatrix[8];
 
 		mMatrix[0] = m11; mMatrix[1] = m12;	mMatrix[2] = m13;
 		mMatrix[3] = m21; mMatrix[4] = m22;	mMatrix[5] = m23;
-		mMatrix[6] = m31; mMatrix[7] = m32; mMatrix[8] = m33;
+		mMatrix[6] = mMatrix1; mMatrix[7] = mMatrix2; mMatrix[8] = mMatrix3;
 
 		return *this;
 	}
@@ -173,13 +174,13 @@ struct Matrix3x3F
 		float m21 = rTranspose.mMatrix[1] * rTranspose.mMatrix[8] - rTranspose.mMatrix[2] * rTranspose.mMatrix[7];
 		float m22 = rTranspose.mMatrix[0] * rTranspose.mMatrix[8] - rTranspose.mMatrix[2] * rTranspose.mMatrix[6];
 		float m23 = rTranspose.mMatrix[0] * rTranspose.mMatrix[7] - rTranspose.mMatrix[1] * rTranspose.mMatrix[6];
-		float m31 = rTranspose.mMatrix[1] * rTranspose.mMatrix[5] - rTranspose.mMatrix[2] * rTranspose.mMatrix[4];
-		float m32 = rTranspose.mMatrix[0] * rTranspose.mMatrix[5] - rTranspose.mMatrix[2] * rTranspose.mMatrix[3];
-		float m33 = rTranspose.mMatrix[0] * rTranspose.mMatrix[4] - rTranspose.mMatrix[1] * rTranspose.mMatrix[3];
+		float mMatrix1 = rTranspose.mMatrix[1] * rTranspose.mMatrix[5] - rTranspose.mMatrix[2] * rTranspose.mMatrix[4];
+		float mMatrix2 = rTranspose.mMatrix[0] * rTranspose.mMatrix[5] - rTranspose.mMatrix[2] * rTranspose.mMatrix[3];
+		float mMatrix3 = rTranspose.mMatrix[0] * rTranspose.mMatrix[4] - rTranspose.mMatrix[1] * rTranspose.mMatrix[3];
 
 		return Matrix3x3F(m11, -m12, m13,
 						  -m21, m22, -m23,
-						  m31, -m32, m33);
+						  mMatrix1, -mMatrix2, mMatrix3);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -208,13 +209,21 @@ struct Matrix3x3F
 		float m21 = rAxis.x() * rAxis.y() * invCosT + rAxis.z() * sinT;
 		float m22 = cosT + invCosT * (rAxis.y() * rAxis.y());
 		float m23 = rAxis.z() * rAxis.y() * invCosT - rAxis.x() * sinT;
-		float m31 = rAxis.x() * rAxis.z() * invCosT - rAxis.y() * sinT;
-		float m32 = rAxis.y() * rAxis.z() * invCosT - rAxis.x() * sinT;
-		float m33 = cosT + invCosT * (rAxis.z() * rAxis.z());
+		float mMatrix1 = rAxis.x() * rAxis.z() * invCosT - rAxis.y() * sinT;
+		float mMatrix2 = rAxis.y() * rAxis.z() * invCosT - rAxis.x() * sinT;
+		float mMatrix3 = cosT + invCosT * (rAxis.z() * rAxis.z());
 
 		return Matrix3x3F(m11, m12, m13,
 						  m21, m22, m23,
-						  m31, m32, m33);
+						  mMatrix1, mMatrix2, mMatrix3);
+	}
+
+	inline Matrix4F ToMatrix4F() const
+	{
+		return Matrix4F(mMatrix[0], mMatrix[1], mMatrix[2], 0,
+						mMatrix[3], mMatrix[4], mMatrix[5], 0,
+						mMatrix[6], mMatrix[7], mMatrix[8], 0,
+						0,			0,			0,			1);
 	}
 
 private:

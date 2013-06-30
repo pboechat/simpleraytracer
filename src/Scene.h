@@ -1,6 +1,7 @@
 #ifndef SCENE_H_
 #define SCENE_H_
 
+#include "Camera.h"
 #include "Light.h"
 #include "SceneObject.h"
 
@@ -9,13 +10,45 @@
 class Scene
 {
 public:
-	Scene()
+	Scene() :
+	  mpCamera(0)
 	{
 	}
 
 	~Scene()
 	{
-		Clear();
+		for (unsigned int i = 0; i < mLights.size(); i++)
+		{
+			delete mLights[i];
+		}
+		mLights.clear();
+
+		for (unsigned int i = 0; i < mSceneObjects.size(); i++)
+		{
+			delete mSceneObjects[i];
+		}
+		mSceneObjects.clear();
+
+		if (mpCamera != 0)
+		{
+			delete mpCamera;
+			mpCamera = 0;
+		}
+	}
+
+	inline void SetCamera(Camera* pCamera)
+	{
+		mpCamera = pCamera;
+	}
+
+	inline Camera* GetCamera()
+	{
+		return mpCamera;
+	}
+
+	inline const Camera* GetCamera() const
+	{
+		return mpCamera;
 	}
 
 	inline void AddLight(Light* pLight)
@@ -48,23 +81,10 @@ public:
 		return mSceneObjects[i];
 	}
 
-	void Clear()
-	{
-		for (unsigned int i = 0; i < mLights.size(); i++)
-		{
-			delete mLights[i];
-		}
-		mLights.clear();
-
-		for (unsigned int i = 0; i < mSceneObjects.size(); i++)
-		{
-			delete mSceneObjects[i];
-		}
-		mSceneObjects.clear();
-	}
-
 	void Update()
 	{
+		mpCamera->Update();
+
 		for (unsigned int i = 0; i < mSceneObjects.size(); i++)
 		{
 			mSceneObjects[i]->Update();
@@ -72,6 +92,7 @@ public:
 	}
 
 private:
+	Camera* mpCamera;
 	std::vector<Light*> mLights;
 	std::vector<SceneObject*> mSceneObjects;
 

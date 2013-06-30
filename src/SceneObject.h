@@ -26,20 +26,19 @@ struct SceneObject
 
 	inline Matrix4x4F model() const
 	{
-		Matrix4x4F model;
-		ToMatrix4x4(model, mWorldTransform.rotation);
+		Matrix4x4F model = mWorldTransform.rotation.ToMatrix4F();
 
 		model[0][3] = mWorldTransform.position.x();
 		model[1][3] = mWorldTransform.position.y();
 		model[2][3] = mWorldTransform.position.z();
 
-		Matrix4x4F scale;
-		ToMatrix4x4(scale, mWorldTransform.scale);
-
-		return model * scale;
+		return model * mWorldTransform.scale.ToMatrix4F();
 	}
 
-	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const = 0;
+	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const
+	{
+		return false;
+	}
 
 	virtual void Update()
 	{
@@ -54,6 +53,8 @@ struct SceneObject
 		{
 			children[i]->Update();
 		}
+
+		OnUpdate();
 	}
 
 protected:
@@ -61,6 +62,10 @@ protected:
 
 	SceneObject() :
 		parent(0)
+	{
+	}
+
+	virtual void OnUpdate()
 	{
 	}
 
