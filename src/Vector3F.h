@@ -240,7 +240,7 @@ struct Vector3F
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	inline Vector3F Normalized()
+	inline Vector3F Normalized() const
 	{
 		float length = Length();
 		return Vector3F(mValues[0] / length, mValues[1] / length, mValues[2] / length);

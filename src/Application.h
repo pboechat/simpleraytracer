@@ -51,6 +51,8 @@ private:
 	static const unsigned int DEPTH_BUFFER_BITS;
 	static const unsigned int HAS_ALPHA;
 	static const PIXELFORMATDESCRIPTOR PIXEL_FORMAT_DESCRIPTOR;
+	static const float ANGLE_INCREMENT;
+	static const float CAMERA_PITCH_LIMIT;
 
 	static Application* s_mpInstance;
 
@@ -65,9 +67,17 @@ private:
 	RayTracer* mpRayTracer;
 	OpenGLRenderer* mpOpenGLRenderer;
 	Renderer* mpRenderer;
+	bool mDebugModeEnabled;
 	bool mReloadScene;
 	double mLastSceneReloadTime;
+	bool mToggleDebugMode;
+	double mLastDebugModeToggleTime;
 	CommandPrompt* mpCommandPrompt;
+	bool mRightMouseButtonPressed;
+	Vector2F mLastMousePosition;
+	float mCameraYaw;
+	float mCameraPitch;
+	float mCameraRoll;
 	
 	Application();
 	~Application();
@@ -76,8 +86,22 @@ private:
 	void LoadSceneFromXML();
 	void Dispose();
 	WNDCLASSEX CreateWindowClass();
+	void KeyDown(unsigned int virtualKey);
+	void KeyUp(unsigned int virtualKey);
+	void MouseButtonDown(unsigned int button, int x, int y);
+	void MouseButtonUp(unsigned int button, int x, int y);
+	void MouseMove(int x, int y);
 	void MoveCameraLeft();
 	void MoveCameraRight();
+	void MoveCameraForward();
+	void MoveCameraBackward();
+	void MoveCameraUp();
+	void MoveCameraDown();
+	void TurnCameraUp();
+	void TurnCameraDown();
+	void TurnCameraLeft();
+	void TurnCameraRight();
+	void UpdateCameraRotation();
 
 };
 

@@ -36,7 +36,7 @@ public:
 	{
 		OnFinish();
 
-		if (WaitForSingleObject(mThreadHandle, INFINITE) == WAIT_FAILED)
+		if (WaitForSingleObject(mThreadHandle, INFINITE) != WAIT_OBJECT_0)
 		{
 			std::cerr << "Error waiting for thread to finish" << std::endl;
 		}

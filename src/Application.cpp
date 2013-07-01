@@ -9,8 +9,11 @@
 #include "TextureLoader.h"
 #include "SceneLoader.h"
 
+#include <windowsx.h>
 #include <string>
 #include <exception>
+
+#include "Common.h"
 
 #define win32Assert(resultHandle, errorMessage) \
 	if (resultHandle == 0) \
@@ -32,6 +35,8 @@ const unsigned int Application::HAS_ALPHA = 0;
 const PIXELFORMATDESCRIPTOR Application::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
 const ColorRGBA Application::CLEAR_COLOR(0, 0, 0, 1);
 const ColorRGBA Application::GLOBAL_AMBIENT_LIGHT(0.5f, 0.5f, 0.5f, 1);
+const float Application::ANGLE_INCREMENT = 3;
+const float Application::CAMERA_PITCH_LIMIT = 45;
 
 //////////////////////////////////////////////////////////////////////////
 Application::Application() :
@@ -46,16 +51,22 @@ Application::Application() :
 	mpRayTracer(0),
 	mpOpenGLRenderer(0),
 	mpRenderer(0),
+	mDebugModeEnabled(false),
 	mReloadScene(true),
 	mLastSceneReloadTime(0),
-	mpCommandPrompt(0)
+	mToggleDebugMode(false),
+	mLastDebugModeToggleTime(0),
+	mpCommandPrompt(0),
+	mRightMouseButtonPressed(false),
+	mCameraYaw(0),
+	mCameraPitch(0),
+	mCameraRoll(0)
 {
 	s_mpInstance = this;
 }
 
 //////////////////////////////////////////////////////////////////////////
 Application::~Application()
-	
 {
 	s_mpInstance = 0;
 }
@@ -63,13 +74,15 @@ Application::~Application()
 //////////////////////////////////////////////////////////////////////////
 void Application::EnableDebugMode()
 {
-	mpRenderer = mpOpenGLRenderer;
+	mDebugModeEnabled = true;
+	mToggleDebugMode = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void Application::DisableDebugMode()
 {
-	mpRenderer = mpRayTracer;
+	mDebugModeEnabled = false;
+	mToggleDebugMode = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,14 +90,14 @@ void Application::EnableRayDebugging(const Vector2F& rRayToDebug)
 {
 	unsigned int rayIndex = (unsigned int)rRayToDebug.y() * SCREEN_WIDTH + (unsigned int)rRayToDebug.x();
 	mpOpenGLRenderer->EnableDebugRay(mpRayTracer->GetRaysMetadata()[rayIndex]);
-	mpRenderer = mpOpenGLRenderer;
+	EnableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void Application::DisableRayDebugging()
 {
 	mpOpenGLRenderer->DisableDebugRay();
-	mpRenderer = mpRayTracer;
+	DisableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,7 +165,23 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 					mpCommandPrompt->ShowMessage("Elapsed time: %.5f seconds", (end - start));
 				}
+				else if (mToggleDebugMode && Time::Now() - mLastDebugModeToggleTime > 0.333f)
+				{
+					if (mDebugModeEnabled)
+					{
+						mpRenderer = mpOpenGLRenderer;
+					}
+					else
+					{
+						mpRenderer = mpRayTracer;
+					}
+					mpRenderer->SetScene(mpScene);
 
+					mToggleDebugMode = false;
+					mLastDebugModeToggleTime = Time::Now();
+				}
+
+				mpScene->Update();
 				mpRenderer->Render();
 				SwapBuffers(mDeviceContextHandle);
 			}
@@ -256,11 +285,218 @@ void Application::LoadSceneFromXML()
 //////////////////////////////////////////////////////////////////////////
 void Application::MoveCameraLeft()
 {
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position -= pCamera->localTransform.right();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void Application::MoveCameraRight()
 {
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position += pCamera->localTransform.right();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MoveCameraForward()
+{
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position += pCamera->localTransform.forward();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MoveCameraBackward()
+{
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position -= pCamera->localTransform.forward();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MoveCameraUp()
+{
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position += Vector3F(0, 1, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MoveCameraDown()
+{
+	if (!mDebugModeEnabled)
+	{
+		return;
+	}
+
+	Camera* pCamera = mpScene->GetCamera();
+	pCamera->localTransform.position -= Vector3F(0, 1, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::KeyDown(unsigned int virtualKey)
+{
+	if (virtualKey == VK_ESCAPE)
+	{
+		DestroyWindow(mWindowHandle);
+	}
+	else if (virtualKey == VK_F5)
+	{
+		mReloadScene = true;
+	}
+	else if (virtualKey == VK_F2)
+	{
+		mpCommandPrompt->Toggle();
+	}
+	else if (virtualKey == VK_LEFT || virtualKey == 65)
+	{
+		MoveCameraLeft();
+	}
+	else if (virtualKey == VK_RIGHT || virtualKey == 68)
+	{
+		MoveCameraRight();
+	}
+	else if (virtualKey == VK_UP || virtualKey == 87)
+	{
+		MoveCameraForward();
+	}
+	else if (virtualKey == VK_DOWN || virtualKey == 83)
+	{
+		MoveCameraBackward();
+	}
+	else if (virtualKey == 81 || virtualKey == 33)
+	{
+		MoveCameraUp();
+	}
+	else if (virtualKey == 69 || virtualKey == 34)
+	{
+		MoveCameraDown();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::KeyUp(unsigned int virtualKey)
+{
+	if (virtualKey == VK_F5)
+	{
+		mReloadScene = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MouseButtonDown(unsigned int button, int x, int y)
+{
+	if (button == MK_RBUTTON)
+	{
+		mLastMousePosition = Vector2F((float)x, (float)y);
+		mRightMouseButtonPressed = true;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MouseButtonUp(unsigned int button, int x, int y)
+{
+	if (button == MK_RBUTTON)
+	{
+		mRightMouseButtonPressed = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::MouseMove(int x, int y)
+{
+	if (!mRightMouseButtonPressed)
+	{
+		return;
+	}
+
+	if (mLastMousePosition.x() == x && mLastMousePosition.y() == y)
+	{
+		return;
+	}
+
+	Vector2F mousePosition = Vector2F((float)x, (float)y);
+	Vector2F mouseDirection = (mousePosition - mLastMousePosition).Normalized();
+	if (mouseDirection.x() > 0)
+	{
+		TurnCameraRight();
+	}
+	else if (mouseDirection.x() < 0)
+	{
+		TurnCameraLeft();
+	}
+
+	if (mouseDirection.y() > 0)
+	{
+		TurnCameraUp();
+	}
+	else if (mouseDirection.y() < 0)
+	{
+		TurnCameraDown();
+	}
+
+	mLastMousePosition = mousePosition;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::TurnCameraUp()
+{
+	mCameraPitch = clamp(mCameraPitch - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	UpdateCameraRotation();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::TurnCameraDown()
+{
+	mCameraPitch = clamp(mCameraPitch + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	UpdateCameraRotation();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::TurnCameraLeft()
+{
+	mCameraYaw += ANGLE_INCREMENT;
+	UpdateCameraRotation();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::TurnCameraRight()
+{
+	mCameraYaw -= ANGLE_INCREMENT;
+	UpdateCameraRotation();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Application::UpdateCameraRotation()
+{
+	Vector3F forward = Matrix3F::AngleAxis(mCameraPitch, Vector3F(1, 0, 0)) * 
+		Matrix3F::AngleAxis(mCameraYaw, Vector3F(0, 1, 0)) * Vector3F(0, 0, -1);
+
+	Camera* pCamera = mpScene->GetCamera();
+	Vector3F position = pCamera->localTransform.position;
+
+	pCamera->localTransform.LookAt(position + forward);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -273,38 +509,60 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 //////////////////////////////////////////////////////////////////////////
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	int x, y;
+
 	switch (message)
 	{
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
 	case WM_KEYDOWN:
-		if (wParam == VK_ESCAPE)
-		{
-			DestroyWindow(Application::s_mpInstance->mWindowHandle);
-		}
-		else if (wParam == VK_F5)
-		{
-			Application::s_mpInstance->mReloadScene = true;
-		}
-		else if (wParam == VK_F2)
-		{
-			Application::s_mpInstance->mpCommandPrompt->Toggle();
-		}
-		else if (wParam == VK_LEFT)
-		{
-			Application::s_mpInstance->MoveCameraLeft();
-		}
-		else if (wParam == VK_RIGHT)
-		{
-			Application::s_mpInstance->MoveCameraRight();
-		}
+		Application::s_mpInstance->KeyDown(wParam);
 		break;
 	case WM_KEYUP:
-		if (wParam == VK_F5)
-		{
-			Application::s_mpInstance->mReloadScene = false;
-		}
+		Application::s_mpInstance->KeyUp(wParam);
+		break;
+	case WM_LBUTTONDOWN:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonDown(MK_LBUTTON, x, y);
+		break;
+	case WM_MBUTTONDOWN:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonDown(MK_MBUTTON, x, y);
+		break;
+	case WM_RBUTTONDOWN:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonDown(MK_RBUTTON, x, y);
+		break;
+	case WM_LBUTTONUP:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonUp(MK_LBUTTON, x, y);
+		break;
+	case WM_MBUTTONUP:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonUp(MK_MBUTTON, x, y);
+		break;
+	case WM_RBUTTONUP:
+		x = GET_X_LPARAM(lParam);
+		y = GET_Y_LPARAM(lParam);
+
+		Application::s_mpInstance->MouseButtonUp(MK_RBUTTON, x, y);
+		break;
+	case WM_MOUSEMOVE:
+		x = GET_X_LPARAM(lParam); 
+		y = GET_Y_LPARAM(lParam); 
+
+		Application::s_mpInstance->MouseMove(x, y);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);

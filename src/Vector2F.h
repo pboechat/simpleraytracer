@@ -1,6 +1,8 @@
 #ifndef VECTOR2F_H_
 #define VECTOR2F_H_
 
+#include <cmath>
+
 struct Vector2F
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -169,6 +171,27 @@ struct Vector2F
 	inline float& operator[] (unsigned int i)
 	{
 		return mValues[i];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline float Length() const
+	{
+		return sqrt(mValues[0] * mValues[0] + mValues[1] * mValues[1]);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline void Normalize()
+	{
+		float length = Length();
+		mValues[0] /= length;
+		mValues[1] /= length;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	inline Vector2F Normalized()
+	{
+		float length = Length();
+		return Vector2F(mValues[0] / length, mValues[1] / length);
 	}
 
 private:

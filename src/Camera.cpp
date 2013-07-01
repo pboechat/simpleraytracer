@@ -12,10 +12,10 @@ Camera::Camera(float fov, float _zNear, float _zFar) :
 	mFar(_zFar)
 {
 	mAspectRatio = Application::SCREEN_WIDTH / (float)Application::SCREEN_HEIGHT;
-	mProjectionPlaneHeight = (float)(2.0 * mNear * tan(degree(mFov) / 2.0f));
+	mProjectionPlaneHeight = (float)(2.0 * mNear * tan(radian(mFov) / 2.0f));
 	mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
 
-	float f = 1.0f / tan(degree(mFov) / 2.0f);
+	float f = 1.0f / tan(radian(mFov) / 2.0f);
 	mProjection = Matrix4F(f / mAspectRatio, 0, 0, 0,
 						   0, f, 0, 0,
 						   0, 0, (mFar + mNear) / (mNear - mFar), (2 * mFar * mNear) / (mNear - mFar),

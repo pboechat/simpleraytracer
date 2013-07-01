@@ -113,7 +113,8 @@ void SceneLoader::ParseCamera(Scene* pScene, rapidxml::xml_node<>* pXmlNode)
 	Vector3F& rUp = GetVector3F(pXmlNode, "up");
 
 	Camera* pCamera = new Camera(fov, nearZ, farZ);
-	pCamera->localTransform.LookAt(rEyePosition, rForward, rUp);
+	pCamera->localTransform.position = rEyePosition;
+	pCamera->localTransform.LookAt(rForward, rUp);
 
 	pScene->SetCamera(pCamera);
 }

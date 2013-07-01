@@ -81,7 +81,7 @@ void OpenGLRenderer::Render()
 		}
 		else if (is(pLight, PointLight))
 		{
-			glLightfv(GL_LIGHT0 + i, GL_POSITION, &(pCamera->view() * cast(pLight, PointLight)->position.ToVector4F())[0]);
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, &cast(pLight, PointLight)->position.ToVector4F()[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_QUADRATIC_ATTENUATION, 1);

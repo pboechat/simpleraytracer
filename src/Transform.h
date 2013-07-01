@@ -26,14 +26,28 @@ struct Transform
 	{
 	}
 
-	void LookAt(const Vector3F& rPosition, const Vector3F& rForward, const Vector3F& rUp)
+	inline Vector3F up()
 	{
-		Vector3F& rZ = (rPosition - rForward).Normalized();
+		return rotation * Vector3F(0, 1, 0);
+	}
+
+	inline Vector3F right()
+	{
+		return rotation * Vector3F(1, 0, 0);
+	}
+
+	inline Vector3F forward()
+	{
+		return rotation * Vector3F(0, 0, -1);
+	}
+
+	void LookAt(const Vector3F& rForward, const Vector3F& rUp = Vector3F(0, 1, 0))
+	{
+		Vector3F& rZ = (position - rForward).Normalized();
 		Vector3F& rX = rUp.Cross(rZ);
 		Vector3F& rY = rZ.Cross(rX);
 
 		rotation = Matrix3F(rX, rY, rZ);
-		position = rPosition;
 	}
 
 	inline Vector3F operator * (const Vector3F& rVector) const

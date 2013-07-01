@@ -4,6 +4,8 @@
 #include "Vector3F.h"
 #include "Matrix4x4F.h"
 
+#define radian(x) x * 0.017453293f
+
 struct Matrix3x3F
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -199,8 +201,8 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	static Matrix3x3F AngleAxis(float angle, const Vector3F& rAxis)
 	{
-		float cosT = cos(angle);
-		float sinT = sin(angle);
+		float cosT = cos(radian(angle));
+		float sinT = sin(radian(angle));
 		float invCosT = 1 - cosT;
 
 		float m11 = cosT + invCosT * (rAxis.x() * rAxis.x());
