@@ -41,6 +41,17 @@ struct Transform
 		return rotation * Vector3F(0, 0, -1);
 	}
 
+	inline Matrix4F ToMatrix4x4F() const
+	{
+		Matrix4x4F model = rotation.ToMatrix4x4F();
+
+		model[0][3] = position.x();
+		model[1][3] = position.y();
+		model[2][3] = position.z();
+
+		return model * scale.ToMatrix4x4F();
+	}
+
 	void LookAt(const Vector3F& rForward, const Vector3F& rUp = Vector3F(0, 1, 0))
 	{
 		Vector3F& rZ = (position - rForward).Normalized();

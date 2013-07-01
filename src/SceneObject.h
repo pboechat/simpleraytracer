@@ -26,13 +26,7 @@ struct SceneObject
 
 	inline Matrix4x4F model() const
 	{
-		Matrix4x4F model = mWorldTransform.rotation.ToMatrix4F();
-
-		model[0][3] = mWorldTransform.position.x();
-		model[1][3] = mWorldTransform.position.y();
-		model[2][3] = mWorldTransform.position.z();
-
-		return model * mWorldTransform.scale.ToMatrix4F();
+		return mWorldTransform.ToMatrix4x4F();
 	}
 
 	virtual bool Intersect(const Ray& rRay, RayHit& rHit) const

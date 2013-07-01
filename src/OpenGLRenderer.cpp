@@ -62,10 +62,12 @@ void OpenGLRenderer::Render()
 	glLoadMatrixf(pCamera->projection().Transpose()[0]);
 
 	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixf(pCamera->view().Transpose()[0]);
+	glLoadIdentity();
 
 	glClearColor(Application::CLEAR_COLOR.r(), Application::CLEAR_COLOR.g(), Application::CLEAR_COLOR.b(), Application::CLEAR_COLOR.a());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &Application::GLOBAL_AMBIENT_LIGHT[0]);
 
 	for (unsigned int i = 0; i < mpScene->NumberOfLights(); i++)
 	{
@@ -77,16 +79,24 @@ void OpenGLRenderer::Render()
 
 		if (is(pLight, DirectionalLight))
 		{
-			glLightfv(GL_LIGHT0 + i, GL_POSITION, &cast(pLight, DirectionalLight)->direction[0]);
+			Vector4F lightDirection = pCamera->inverseRotation() * cast(pLight, DirectionalLight)->direction.ToVector4F();
+			lightDirection.w() = 0;
+
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
 		else if (is(pLight, PointLight))
 		{
-			glLightfv(GL_LIGHT0 + i, GL_POSITION, &cast(pLight, PointLight)->position.ToVector4F()[0]);
+			Vector4F lightPosition = pCamera->view() * cast(pLight, PointLight)->position.ToVector4F();
+			lightPosition.w() = 1;
+
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_QUADRATIC_ATTENUATION, 1);
 		}
 	}
+
+	glLoadMatrixf(pCamera->view().Transpose()[0]);
 
 	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
 	{
@@ -331,8 +341,7 @@ void OpenGLRenderer::SetUpMaterial(SceneObject* pSceneObject)
 void OpenGLRenderer::RenderTriangles(const Matrix4F& model, const std::vector<unsigned int>& indices, const std::vector<Vector3F>& vertices, const std::vector<Vector3F>& normals, const std::vector<Vector2F>& uvs)
 {
 	glPushMatrix();
-		const Matrix4F& rModelView = mpScene->GetCamera()->view() * model;
-		glLoadMatrixf(rModelView.Transpose()[0]);
+		glMultMatrixf(model.Transpose()[0]);
 
 		glBegin(GL_TRIANGLES);
 		for (unsigned int i = 0; i < indices.size(); i += 3)

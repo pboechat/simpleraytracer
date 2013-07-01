@@ -35,7 +35,7 @@ void Camera::OnUpdate()
 	mZ = mWorldTransform.rotation.GetColumn(2);
 
 	// the inverse of a "pure rotation" matrix is its transpose
-	mInverseRotation = mWorldTransform.rotation.Transpose().ToMatrix4F();
+	mInverseRotation = mWorldTransform.rotation.Transpose().ToMatrix4x4F();
 
 	mView = mInverseRotation * Matrix4F(1, 0, 0, -mWorldTransform.position.x(), 
 	 						            0, 1, 0, -mWorldTransform.position.y(), 

@@ -1,9 +1,9 @@
 <Scene>
 	<Camera fov="45" near="1" far="100" eyePosition="0, 0, 3" forward="0.342, 0, -0.939" up="0, 1, 0">
 	</Camera>
-	<Light type="point" intensity="2.0" position="0.3, 0, -1" attenuation="1">
+	<Light type="point" intensity="1.0" position="1, 0, -2" attenuation="1">
 	</Light>
-	<Light type="point" intensity="2.0" position="-0.3, 0, 0" attenuation="1">
+	<Light type="point" intensity="1.0" position="-1, 0, -2" attenuation="1">
 	</Light>
 	<Mesh id="1" vertices="meshes/quad.vertices" normals="meshes/quad.normals" uvs="meshes/quad.uvs" indices="meshes/quad.indices">
 		<Transform scale="1, 0, 0, 0, 1, 0, 0, 0, 1" rotation="1, 0, 0, 0, 1, 0, 0, 0, 1" position="0, -1, -5">

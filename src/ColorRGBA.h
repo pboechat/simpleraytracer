@@ -218,6 +218,12 @@ struct ColorRGBA
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline const float& operator[] (unsigned int i) const
+	{
+		return mValues[i];
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA Blend(const ColorRGBA& rDstColor) const
 	{
 		float invA = 1 - mValues[3];

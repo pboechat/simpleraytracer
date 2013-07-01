@@ -220,12 +220,12 @@ struct Matrix3x3F
 						  mMatrix1, mMatrix2, mMatrix3);
 	}
 
-	inline Matrix4F ToMatrix4F() const
+	inline Matrix4x4F ToMatrix4x4F() const
 	{
-		return Matrix4F(mMatrix[0], mMatrix[1], mMatrix[2], 0,
-						mMatrix[3], mMatrix[4], mMatrix[5], 0,
-						mMatrix[6], mMatrix[7], mMatrix[8], 0,
-						0,			0,			0,			1);
+		return Matrix4x4F(mMatrix[0], mMatrix[1], mMatrix[2], 0,
+						  mMatrix[3], mMatrix[4], mMatrix[5], 0,
+						  mMatrix[6], mMatrix[7], mMatrix[8], 0,
+						  0,			0,			0,			1);
 	}
 
 private:

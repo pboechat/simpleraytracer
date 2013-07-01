@@ -245,6 +245,7 @@ void RayTracer::TraceRays(unsigned char* pColorBuffer)
 		{
 			Ray& rRay = mpScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
 			mpRaysMetadata[rayMetadataIndex].start = rRay.origin;
+			mpRaysMetadata[rayMetadataIndex].next = 0;
 			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex]);
 			setColor(pColorBuffer, colorBufferIndex, color);
 		}
@@ -310,24 +311,21 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 	{
 		Light* pLight = mpScene->GetLight(j);
 
+		float distanceToLight = -1;
 		Vector3F lightDirection;
 		if (is(pLight, DirectionalLight))
 		{
-			lightDirection = Vector3F(pCamera->inverseRotation() * cast(pLight, DirectionalLight)->direction.ToVector4F());
+			lightDirection = cast(pLight, DirectionalLight)->direction;
 		}
 		else if (is(pLight, PointLight))
 		{
-			lightDirection = (cast(pLight, PointLight)->position - rHit.point).Normalized();
+			Vector3F lightPosition = cast(pLight, PointLight)->position;
+			lightDirection = (lightPosition - rHit.point).Normalized();
+			distanceToLight = lightPosition.Distance(rHit.point);
 		}
 		else 
 		{
 			throw std::exception("unimplemented light type");
-		}
-
-		float distanceToLight = -1;
-		if (is(pLight, PointLight))
-		{
-			distanceToLight = Vector3F(pCamera->view() * cast(pLight, PointLight)->position.ToVector4F()).Distance(rHit.point);
 		}
 
 		Ray shadowRay(rHit.point, lightDirection);
