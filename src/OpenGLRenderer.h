@@ -29,7 +29,7 @@ public:
 	}
 
 	virtual void Render();
-	
+
 private:
 	std::map<SceneObject*, unsigned int> mTextureIds;
 	std::map<Sphere*, Mesh*> mSphereMeshes;
@@ -37,6 +37,7 @@ private:
 	RayMetadata mRayToDebug;
 
 	void RenderMesh(Mesh* pMesh);
+	void RenderRay();
 	void RenderSphere(Sphere* pSphere);
 	void SetUpMaterial(SceneObject* pSceneObject);
 	void RenderTriangles(const Matrix4F& model, const std::vector<unsigned int>& indices, const std::vector<Vector3F>& vertices, const std::vector<Vector3F>& normals, const std::vector<Vector2F>& uvs);

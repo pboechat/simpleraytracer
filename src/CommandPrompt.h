@@ -24,8 +24,10 @@ private:
 	bool mOpen;
 	bool mRunning;
 	std::string mCommand;
+	std::string mLastCommand;
 	bool mParseCommand;
 
+	bool IsValidCharacter(char c);
 	void ParseCommand();
 
 };

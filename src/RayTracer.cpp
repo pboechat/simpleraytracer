@@ -23,6 +23,7 @@
 const unsigned int RayTracer::DEPTH_BUFFER_SIZE = Application::SCREEN_WIDTH * Application::SCREEN_HEIGHT;
 const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * Application::BYTES_PER_PIXEL;
 const unsigned int RayTracer::RAYS_METADATA_SIZE = Application::SCREEN_WIDTH * Application::SCREEN_HEIGHT;
+const unsigned int RayTracer::MAX_ITERATIONS = 5;
 
 #define clampColor(v, vmin, vmax) \
 	(v).r() = (((v).r() < (vmin)) ? (vmin) : (((v).r() > (vmax)) ? (vmax) : (v).r())); \
@@ -237,6 +238,25 @@ void RayTracer::Render()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void RayTracer::ResetRayMetadata(RayMetadata& rRayMetadata)
+{
+	rRayMetadata.isReflection = false;
+	rRayMetadata.isRefraction = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void RayTracer::SetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rayOrigin, const Vector3F& hitPoint) const
+{
+	rRayMetadata.start = rayOrigin;
+	if (rRayMetadata.next != 0)
+	{
+		delete rRayMetadata.next;
+	}
+	rRayMetadata.next = 0;
+	rRayMetadata.end = hitPoint;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void RayTracer::TraceRays(unsigned char* pColorBuffer)
 {
 	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0, rayMetadataIndex = 0; y < Application::SCREEN_HEIGHT; y++)
@@ -244,18 +264,22 @@ void RayTracer::TraceRays(unsigned char* pColorBuffer)
 		for (unsigned int x = 0; x < Application::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++)
 		{
 			Ray& rRay = mpScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
-			mpRaysMetadata[rayMetadataIndex].start = rRay.origin;
-			mpRaysMetadata[rayMetadataIndex].next = 0;
-			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex]);
+			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex]);
+			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex], 0);
 			setColor(pColorBuffer, colorBufferIndex, color);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, SceneObject* pIgnoreSceneObject) const
+ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, SceneObject* pIgnoreSceneObject) const
 {
 	ColorRGBA finalColor = Application::CLEAR_COLOR;
+
+	if (iteration > MAX_ITERATIONS)
+	{
+		return finalColor;
+	}
 
 	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
 	{
@@ -278,9 +302,9 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 
 			*pCurrentDepth = depth;
 
-			rRayMetadata.end = hit.point;
+			SetRayMetadata(rRayMetadata, rRay.origin, hit.point);
 
-			ColorRGBA currentColor = Shade(pSceneObject, rRay, hit, rRayMetadata);
+			ColorRGBA currentColor = Shade(pSceneObject, rRay, hit, rRayMetadata, iteration);
 
 			if (pSceneObject->material.transparent)
 			{
@@ -297,7 +321,7 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata) const
+ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
 {
 	Material& rMaterial = pSceneObject->material;
 	const Camera* pCamera = mpScene->GetCamera();
@@ -358,8 +382,9 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 		float newDepth = pCamera->zFar();
 		RayMetadata* pReflectionRayMetadata = new RayMetadata();
 		pReflectionRayMetadata->start = reflectionRay.origin;
+		pReflectionRayMetadata->isReflection = true;
 		rRayMetadata.next = pReflectionRayMetadata;
-		color += rMaterial.reflection * TraceRay(reflectionRay, *pReflectionRayMetadata, &newDepth, pSceneObject);
+		color += rMaterial.reflection * TraceRay(reflectionRay, *pReflectionRayMetadata, &newDepth, iteration + 1, pSceneObject);
 	}
 	else if (rMaterial.refraction > 0)
 	{
@@ -373,9 +398,10 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 		Ray refractionRay(rHit.point, rRefractionDirection);
 		float newDepth = pCamera->zFar();
 		RayMetadata* pRefractionRayMetadata = new RayMetadata();
+		pRefractionRayMetadata->isRefraction = true;
 		pRefractionRayMetadata->start = refractionRay.origin;
 		rRayMetadata.next = pRefractionRayMetadata;
-		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, pSceneObject));
+		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, iteration + 1, pSceneObject));
 	}
 
 	clampColor(color, 0, 1);
@@ -429,4 +455,5 @@ ColorRGBA RayTracer::BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const Co
 
 	return (diffuseContribution + specularContribution);
 }
+
 

@@ -19,7 +19,7 @@
 
 #include "Common.h"
 
-#define SPHERE_MESH_SLICES 60
+#define SPHERE_MESH_SLICES 100
 
 //////////////////////////////////////////////////////////////////////////
 OpenGLRenderer::OpenGLRenderer() :
@@ -114,27 +114,7 @@ void OpenGLRenderer::Render()
 
 	if (mDebugRayEnabled)
 	{
-		glDisable(GL_LIGHTING);
-		glEnable(GL_COLOR_MATERIAL);
-		glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-		glLineWidth(1.5f);
-		glColor4f(1, 1, 1, 1);
-
-		const RayMetadata* pRay = &mRayToDebug;
-		while (pRay != 0)
-		{
-			if (pRay->end.x() == -1)
-			{
-				break;
-			}
-
-			glBegin(GL_LINES);
-			glVertex3fv(&pRay->start[0]);
-			glVertex3fv(&pRay->end[0]);
-			glEnd();
-
-			pRay = pRay->next;
-		}
+		RenderRay();
 	}
 }
 
@@ -165,6 +145,44 @@ void OpenGLRenderer::RenderSphere(Sphere* pSphere)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void OpenGLRenderer::RenderRay()
+{
+	glDisable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	glLineWidth(1.5f);
+
+	const RayMetadata* pRay = &mRayToDebug;
+	while (pRay != 0)
+	{
+		if (pRay->end.x() == -1)
+		{
+			break;
+		}
+
+		if (pRay->isReflection)
+		{
+			glColor4f(0, 1, 1, 1);
+		}
+		else if (pRay->isRefraction)
+		{
+			glColor4f(0.8f, 0.8f, 0.8f, 1);
+		}
+		else
+		{
+			glColor4f(1, 1, 0, 1);
+		}
+
+		glBegin(GL_LINES);
+		glVertex3fv(&pRay->start[0]);
+		glVertex3fv(&pRay->end[0]);
+		glEnd();
+
+		pRay = pRay->next;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 unsigned int OpenGLRenderer::AllocateTextureForSceneObject(SceneObject* pSceneObject)
 {
 	unsigned int textureId;
@@ -188,122 +206,62 @@ Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
 {
 	Mesh* pMesh = new Mesh();
 
-	const unsigned int vertexQuantity = (SPHERE_MESH_SLICES - 2) * (SPHERE_MESH_SLICES + 1) + 2;
-	const unsigned int triangleQuantity = 2 * (SPHERE_MESH_SLICES - 2) * SPHERE_MESH_SLICES;
-
-	const float invRS = 1.0f / static_cast<float>(SPHERE_MESH_SLICES);
-	const float zFactor = 2.0f / static_cast<float>(SPHERE_MESH_SLICES - 1);
-
-	pMesh->vertices = std::vector<Vector3F>(vertexQuantity);
-	pMesh->normals = std::vector<Vector3F>(vertexQuantity);
-	pMesh->uvs = std::vector<Vector2F>(vertexQuantity);
-	pMesh->indices = std::vector<unsigned int>(3 * triangleQuantity);
-
-	float* pSin = new float[SPHERE_MESH_SLICES + 1];
-	float* pCos = new float[SPHERE_MESH_SLICES + 1];
-	for (unsigned int iR = 0; iR < SPHERE_MESH_SLICES; iR++)
+	float uStep = 2 * PI / (SPHERE_MESH_SLICES - 1);
+	float vStep = PI / (SPHERE_MESH_SLICES - 1);
+	float u = 0.0f;
+	for (unsigned int i = 0; i < SPHERE_MESH_SLICES; i++)
 	{
-		float angle = 2 * PI * invRS * iR;
-		pCos[iR] = cos(angle);
-		pSin[iR] = sin(angle);
-	}
+		float cosU = cos(u);
+		float sinU = sin(u);
 
-	pSin[SPHERE_MESH_SLICES] = pSin[0];
-	pCos[SPHERE_MESH_SLICES] = pCos[0];
-
-	unsigned int i = 0;
-	for (unsigned int iZ = 1; iZ < SPHERE_MESH_SLICES - 1; iZ++)
-	{
-		const float zFraction = -1 + zFactor * iZ;  // in (-1,1)
-		const float z = pSphere->radius * zFraction;
-
-		// compute center of slice
-		Vector3F sliceCenter(0, 0, z);
-
-		// compute radius of slice
-		float sliceRadius = sqrt(abs(pSphere->radius * pSphere->radius - z * z));
-
-		Vector3F normal;
-		unsigned int iSave = i;
-		for (unsigned int iR = 0; iR < SPHERE_MESH_SLICES; iR++)
+		float v = 0.0f;
+		for (unsigned int j = 0; j < SPHERE_MESH_SLICES; j++)
 		{
-			float radialFraction = iR * invRS;  // in [0,1)
-			Vector3F vertex = sliceCenter + sliceRadius * Vector3F(pCos[iR], pSin[iR], 0);
-			pMesh->vertices[i] = vertex;
-			pMesh->normals[i] = (-vertex).Normalized();
-			pMesh->uvs[i] = Vector2F(radialFraction, 0.5f * (zFraction + 1));
-			i++;
+			float cosV = cos(v);
+			float sinV = sin(v);
+
+			float nX = sinV * cosU;
+			float nY = -cosV;
+			float nZ = -sinV * sinU;
+
+			float n = sqrt( nX * nX + nY * nY + nZ * nZ );
+
+			if (n < 0.99f || n > 1.01f)
+			{
+				nX = nX / n;
+				nY = nY / n;
+				nZ = nZ / n;
+			}
+
+			float x = pSphere->radius * nX;
+			float y = pSphere->radius * nY;
+			float z = pSphere->radius * nZ;
+
+			Vector3F normal(nX, nY, nZ);
+
+			pMesh->vertices.push_back(Vector3F(x, y, z));
+			pMesh->normals.push_back(normal);
+
+			pMesh->uvs.push_back(Vector2F(asin(normal.x()) / PI + 0.5f, asin(normal.y()) / PI + 0.5f));
+
+			v += vStep;
 		}
-
-		pMesh->vertices[i] = pMesh->vertices[iSave];
-		pMesh->normals[i] = pMesh->normals[iSave];
-		pMesh->uvs[i] = Vector2F(1, 0.5f * (zFraction + 1));
-
-		i++;
+		u += uStep;
 	}
 
-	// south pole
-	pMesh->vertices[i] = Vector3F(0, 0, -pSphere->radius);
-	pMesh->normals[i] = Vector3F(0, 0, 1);
-	pMesh->uvs[i] = Vector2F(0.5f, 0.5f);
-
-	i++;
-
-	// north pole
-	pMesh->vertices[i] = Vector3F(0, 0, pSphere->radius);
-	pMesh->normals[i] = Vector3F(0, 0, -1);
-	pMesh->uvs[i] = Vector2F(0.5f, 1);
-
-	i++;
-	unsigned int rsc = SPHERE_MESH_SLICES;
-	unsigned int vq = vertexQuantity;
-	unsigned int zsc = SPHERE_MESH_SLICES;
-
-	// generate connectivity
-	unsigned int iZStart = 0;
-	unsigned int c = 0;
-	for (unsigned int iZ = 0; iZ < SPHERE_MESH_SLICES - 3; iZ++)
+	for (unsigned int i = 0; i < SPHERE_MESH_SLICES - 1; i++)
 	{
-		unsigned int i0 = iZStart;
-		unsigned int i1 = i0 + 1;
-		iZStart += rsc + 1;
-		unsigned int i2 = iZStart;
-		unsigned int i3 = i2 + 1;
-		for (unsigned int i = 0; i < SPHERE_MESH_SLICES; i++)
+		for (unsigned j = 0; j < SPHERE_MESH_SLICES - 1; j++)
 		{
-			pMesh->indices[c] = i0++;
-			pMesh->indices[c + 1] = i2;
-			pMesh->indices[c + 2] = i1;
-			pMesh->indices[c + 3] = i1++;
-			pMesh->indices[c + 4] = i2++;
-			pMesh->indices[c + 5] = i3++;
-			c += 6;
+			unsigned int p = i * SPHERE_MESH_SLICES + j;
+			pMesh->indices.push_back(p);
+			pMesh->indices.push_back(p + SPHERE_MESH_SLICES);
+			pMesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
+			pMesh->indices.push_back(p);
+			pMesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
+			pMesh->indices.push_back(p + 1);
 		}
 	}
-
-	// south pole triangles
-	unsigned int vQm2 = vq - 2;
-	for (unsigned int i = 0; i < rsc; i++)
-	{
-		pMesh->indices[c] = i;
-		pMesh->indices[c + 1] = i + 1;
-		pMesh->indices[c + 2] = vQm2;
-		c += 3;
-	}
-
-	// north pole triangles
-	unsigned int vQm1 = vq - 1;
-	unsigned int offset = (zsc - 3) * (rsc + 1);
-	for (unsigned int i = 0; i < rsc; i++)
-	{
-		pMesh->indices[c] = i + offset;
-		pMesh->indices[c + 1] = vQm1;
-		pMesh->indices[c + 2] = i+1+offset;
-		c += 3;
-	}
-
-	delete[] pCos;
-	delete[] pSin;
 
 	return pMesh;
 }

@@ -233,7 +233,7 @@ void SceneLoader::ParseMaterial(rapidxml::xml_node<>* pXmlNode, Material& rMater
 
 	rMaterial.transparent = GetBool(pXmlNode, "transparent");
 	rMaterial.reflection = GetFloat(pXmlNode, "reflection");
-	rMaterial.refraction = GetBool(pXmlNode, "refraction");
+	rMaterial.refraction = GetFloat(pXmlNode, "refraction");
 }
 
 //////////////////////////////////////////////////////////////////////////

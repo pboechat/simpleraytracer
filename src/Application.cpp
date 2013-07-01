@@ -34,7 +34,7 @@ const unsigned int Application::DEPTH_BUFFER_BITS = 32;
 const unsigned int Application::HAS_ALPHA = 0;
 const PIXELFORMATDESCRIPTOR Application::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
 const ColorRGBA Application::CLEAR_COLOR(0, 0, 0, 1);
-const ColorRGBA Application::GLOBAL_AMBIENT_LIGHT(0.5f, 0.5f, 0.5f, 1);
+const ColorRGBA Application::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
 const float Application::ANGLE_INCREMENT = 3;
 const float Application::CAMERA_PITCH_LIMIT = 45;
 
@@ -151,6 +151,8 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{
 				if (mReloadScene && Time::Now() - mLastSceneReloadTime > 0.333f)
 				{
+					DisableDebugMode();
+
 					LoadSceneFromXML();
 
 					double start = Time::Now();

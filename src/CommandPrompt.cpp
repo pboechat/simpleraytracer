@@ -57,6 +57,32 @@ void CommandPrompt::Toggle()
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CommandPrompt::IsValidCharacter(char c)
+{
+	if (c == 95) // _
+	{
+		return true;
+	}
+
+	if (c == 32) // space
+	{
+		return true;
+	}
+
+	if (c >= 97 && c <= 122) // a-z
+	{
+		return true;
+	}
+
+	if (c >= 48 && c <= 57) // 0-9
+	{
+		return true;
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CommandPrompt::Open()
 {
 	if (mOpen)
@@ -116,9 +142,35 @@ DWORD CommandPrompt::Run()
 			if (inputRecords[i].EventType == KEY_EVENT)
 			{
 				const KEY_EVENT_RECORD& event = inputRecords[i].Event.KeyEvent;
+				const int vk = event.wVirtualKeyCode;
 				const char c = event.uChar.AsciiChar;
 				if (!event.bKeyDown)
 				{
+					continue;
+				}
+
+				if (vk == VK_UP || vk == VK_DOWN)
+				{
+					for (unsigned int j = 0; j < mCommand.size(); j++)
+					{
+						std::cout << '\b';
+					}
+
+					for (unsigned int j = 0; j < mCommand.size(); j++)
+					{
+						std::cout << ' ';
+					}
+
+					for (unsigned int j = 0; j < mCommand.size(); j++)
+					{
+						std::cout << '\b';
+					}
+
+					std::cout << mLastCommand;
+					std::string tmp = mCommand;
+					mCommand = mLastCommand;
+					mLastCommand = tmp;
+
 					continue;
 				}
 
@@ -139,12 +191,12 @@ DWORD CommandPrompt::Run()
 				}
 				else 
 				{
-					if (c == 13)
+					if (c == 13) // return
 					{
 						mParseCommand = true;
 						std::cout << std::endl;
 					}
-					else 
+					else if (IsValidCharacter(c))
 					{
 						mCommand += c;
 						std::cout << c;
@@ -156,6 +208,7 @@ DWORD CommandPrompt::Run()
 		if (mParseCommand)
 		{
 			ParseCommand();
+			mLastCommand = mCommand;
 			mCommand.clear();
 			std::cout << std::endl << std::endl << "> ";
 			mParseCommand = false;

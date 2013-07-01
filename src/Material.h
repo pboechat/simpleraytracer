@@ -16,7 +16,7 @@ struct Material
 	float refraction;
 
 	Material() :
-		ambientColor(0, 0, 0, 0),
+		ambientColor(1, 1, 1, 1),
 		diffuseColor(1, 1, 1, 1),
 		specularColor(1, 1, 1, 1),
 		shininess(1),

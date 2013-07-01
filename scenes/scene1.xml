@@ -26,7 +26,7 @@
 	<Sphere id="4" radius="0.333">
 		<Transform scale="1, 0, 0, 0, 1, 0, 0, 0, 1" rotation="1, 0, 0, 0, 1, 0, 0, 0, 1" position="2, -0.5, -4.5">
 		</Transform>
-		<Material ambientColor="0.2, 0.2, 0.2, 1" diffuseColor="0.2, 0.2, 0.2, 1" shininess="5" texture="textures/Ball.png" transparent="0" reflection="0" refraction="0">
+		<Material ambientColor="0.2, 0.2, 0.2, 0.5" diffuseColor="0.8, 0.8, 0.8, 0.5" shininess="5" texture="textures/Ball.png" transparent="1" reflection="0" refraction="0.5">
 		</Material>
 	</Sphere>
 	<Sphere id="5" radius="0.5">

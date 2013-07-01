@@ -7,6 +7,8 @@ struct RayMetadata
 {
 	Vector3F start;
 	Vector3F end;
+	bool isReflection;
+	bool isRefraction;
 	RayMetadata* next;
 
 	RayMetadata() :
@@ -20,6 +22,7 @@ struct RayMetadata
 		if (next != 0)
 		{
 			delete next;
+			next = 0;
 		}
 	}
 
