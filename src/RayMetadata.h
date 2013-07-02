@@ -13,7 +13,9 @@ struct RayMetadata
 
 	RayMetadata() :
 		end(-1, -1, -1),
-		next(0)
+		next(0),
+		isReflection(false),
+		isRefraction(false)
 	{
 	}
 
