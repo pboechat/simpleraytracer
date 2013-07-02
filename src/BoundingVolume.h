@@ -9,7 +9,7 @@
 
 struct BoundingVolume
 {
-	~BoundingVolume()
+	virtual ~BoundingVolume()
 	{
 	}
 

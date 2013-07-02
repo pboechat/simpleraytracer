@@ -2,8 +2,7 @@
 #define BOUNDINGSPHERE_H_
 
 #include "BoundingVolume.h"
-
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+#include "Common.h"
 
 struct BoundingSphere : public BoundingVolume
 {
