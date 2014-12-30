@@ -7,40 +7,41 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace TinyObjLoader;
 
 struct ModelLoader
 {
-	static void LoadObj(const std::string& rFileName, Scene& rScene)
+	static void LoadObj(const std::string& fileName, Scene& scene)
 	{
 		std::vector<shape_t> shapes;
 
-		TinyObjLoader::LoadObj(shapes, rFileName.c_str());
+		TinyObjLoader::LoadObj(shapes, fileName.c_str());
 
 		for (unsigned int i = 0; i < shapes.size(); i++)
 		{
-			shape_t& rShape = shapes[i];
-			Mesh* pMesh = new Mesh();
+			shape_t& shape = shapes[i];
+			std::shared_ptr<Mesh> mesh(new Mesh());
 
-			pMesh->indices = rShape.mesh.indices;
+			mesh->indices = shape.mesh.indices;
 
-			for (unsigned int j = 0; j < rShape.mesh.positions.size(); j += 3)
+			for (unsigned int j = 0; j < shape.mesh.positions.size(); j += 3)
 			{
-				pMesh->vertices.push_back(Vector3F(rShape.mesh.positions[j], rShape.mesh.positions[j + 1], rShape.mesh.positions[j + 2]));
+				mesh->vertices.push_back(Vector3F(shape.mesh.positions[j], shape.mesh.positions[j + 1], shape.mesh.positions[j + 2]));
 			}
 
-			for (unsigned int j = 0; j < rShape.mesh.normals.size(); j += 3)
+			for (unsigned int j = 0; j < shape.mesh.normals.size(); j += 3)
 			{
-				pMesh->normals.push_back(Vector3F(rShape.mesh.normals[j], rShape.mesh.normals[j + 1], rShape.mesh.normals[j + 2]));
+				mesh->normals.push_back(Vector3F(shape.mesh.normals[j], shape.mesh.normals[j + 1], shape.mesh.normals[j + 2]));
 			}
 
-			for (unsigned int j = 0; j < rShape.mesh.texcoords.size(); j += 2)
+			for (unsigned int j = 0; j < shape.mesh.texcoords.size(); j += 2)
 			{
-				pMesh->uvs.push_back(Vector2F(rShape.mesh.texcoords[j], rShape.mesh.texcoords[j + 1]));
+				mesh->uvs.push_back(Vector2F(shape.mesh.texcoords[j], shape.mesh.texcoords[j + 1]));
 			}
 
-			rScene.AddSceneObject(pMesh);
+			scene.AddSceneObject(std::dynamic_pointer_cast<SceneObject>(mesh));
 		}
 	}
 

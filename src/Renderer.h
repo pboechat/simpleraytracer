@@ -8,9 +8,9 @@ class Renderer
 public:
 	virtual ~Renderer() {}
 
-	inline void SetScene(const Scene* pScene)
+	inline void SetScene(std::shared_ptr<Scene>& scene)
 	{
-		mpScene = pScene;
+		mScene = scene;
 		OnSetScene();
 	}
 
@@ -21,10 +21,10 @@ public:
 	virtual void Render() = 0;
 
 protected:
-	const Scene* mpScene;
+	std::shared_ptr<Scene> mScene;
 
 	Renderer() : 
-		mpScene(0) 
+		mScene(nullptr) 
 	{
 	}
 

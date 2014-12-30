@@ -1,4 +1,4 @@
-#include "Application.h"
+#include "SimpleRayTracerApp.h"
 #include "Time.h"
 #include "Vector3F.h"
 #include "ColorRGBA.h"
@@ -23,23 +23,23 @@
 		exit(EXIT_FAILURE); \
 	} \
 
-Application* Application::s_mpInstance = 0;
-const char* Application::WINDOW_TITLE = "simpleraytracer";
-const char* Application::WINDOW_CLASS_NAME = "simpleraytracerWindowClass";
-const unsigned int Application::SCREEN_WIDTH = 800;
-const unsigned int Application::SCREEN_HEIGHT = 600;
-const unsigned int Application::BYTES_PER_PIXEL = 4;
-const unsigned int Application::COLOR_BUFFER_BITS = 32;
-const unsigned int Application::DEPTH_BUFFER_BITS = 32;
-const unsigned int Application::HAS_ALPHA = 0;
-const PIXELFORMATDESCRIPTOR Application::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
-const ColorRGBA Application::CLEAR_COLOR(0, 0, 0, 1);
-const ColorRGBA Application::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
-const float Application::ANGLE_INCREMENT = 3;
-const float Application::CAMERA_PITCH_LIMIT = 45;
+SimpleRayTracerApp* SimpleRayTracerApp::s_mpInstance = 0;
+const char* SimpleRayTracerApp::WINDOW_TITLE = "simpleraytracer";
+const char* SimpleRayTracerApp::WINDOW_CLASS_NAME = "simpleraytracerWindowClass";
+const unsigned int SimpleRayTracerApp::SCREEN_WIDTH = 800;
+const unsigned int SimpleRayTracerApp::SCREEN_HEIGHT = 600;
+const unsigned int SimpleRayTracerApp::BYTES_PER_PIXEL = 4;
+const unsigned int SimpleRayTracerApp::COLOR_BUFFER_BITS = 32;
+const unsigned int SimpleRayTracerApp::DEPTH_BUFFER_BITS = 32;
+const unsigned int SimpleRayTracerApp::HAS_ALPHA = 0;
+const PIXELFORMATDESCRIPTOR SimpleRayTracerApp::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
+const ColorRGBA SimpleRayTracerApp::CLEAR_COLOR(0, 0, 0, 1);
+const ColorRGBA SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
+const float SimpleRayTracerApp::ANGLE_INCREMENT = 3;
+const float SimpleRayTracerApp::CAMERA_PITCH_LIMIT = 45;
 
 //////////////////////////////////////////////////////////////////////////
-Application::Application() :
+SimpleRayTracerApp::SimpleRayTracerApp() :
 	mRunning(false),
 	mApplicationHandle(0),
 	mWindowHandle(0),
@@ -47,16 +47,16 @@ Application::Application() :
 	mPixelFormat(0),
 	mOpenGLRenderingContextHandle(0),
 	mpSceneFileName(0),
-	mpScene(0),
-	mpRayTracer(0),
-	mpOpenGLRenderer(0),
-	mpRenderer(0),
+	mScene(nullptr),
+	mRayTracer(0),
+	mOpenGLRenderer(0),
+	mRenderer(0),
 	mDebugModeEnabled(false),
 	mReloadScene(true),
 	mLastSceneReloadTime(0),
 	mToggleDebugMode(false),
 	mLastDebugModeToggleTime(0),
-	mpCommandPrompt(0),
+	//mCommandPrompt(nullptr),
 	mRightMouseButtonPressed(false),
 	mCameraYaw(0),
 	mCameraPitch(0),
@@ -66,47 +66,47 @@ Application::Application() :
 }
 
 //////////////////////////////////////////////////////////////////////////
-Application::~Application()
+SimpleRayTracerApp::~SimpleRayTracerApp()
 {
-	s_mpInstance = 0;
+	s_mpInstance = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::EnableDebugMode()
+void SimpleRayTracerApp::EnableDebugMode()
 {
 	mDebugModeEnabled = true;
 	mToggleDebugMode = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::DisableDebugMode()
+void SimpleRayTracerApp::DisableDebugMode()
 {
 	mDebugModeEnabled = false;
 	mToggleDebugMode = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::EnableRayDebugging(const Vector2F& rRayToDebug)
+void SimpleRayTracerApp::EnableRayDebugging(const Vector2F& rRayToDebug)
 {
 	unsigned int rayIndex = (unsigned int)rRayToDebug.y() * SCREEN_WIDTH + (unsigned int)rRayToDebug.x();
-	mpOpenGLRenderer->EnableDebugRay(mpRayTracer->GetRaysMetadata()[rayIndex]);
+	mOpenGLRenderer->EnableDebugRay(mRayTracer->GetRaysMetadata()[rayIndex]);
 	EnableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::DisableRayDebugging()
+void SimpleRayTracerApp::DisableRayDebugging()
 {
-	mpOpenGLRenderer->DisableDebugRay();
+	mOpenGLRenderer->DisableDebugRay();
 	DisableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
-int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 {
-	mApplicationHandle = hInstance;
+	mApplicationHandle = GetModuleHandle(0);
 
 	win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
-	win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, hInstance, NULL)), "CreateWindow failed");
+	win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, mApplicationHandle, NULL)), "CreateWindow failed");
 	win32Assert((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
 	win32Assert((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
 	win32Assert(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
@@ -116,18 +116,18 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	SetForegroundWindow(mWindowHandle);
 	SetFocus(mWindowHandle);
 
-	mpSceneFileName = lpCmdLine; 
+	mpSceneFileName = argv[1]; 
 
-	mpRayTracer = new RayTracer();
-	mpOpenGLRenderer = new OpenGLRenderer();
+	mRayTracer = std::shared_ptr<RayTracer>(new RayTracer());
+	mOpenGLRenderer = std::shared_ptr<OpenGLRenderer>(new OpenGLRenderer());
 
-	mpRayTracer->Start();
-	mpOpenGLRenderer->Start();
+	mRayTracer->Start();
+	mOpenGLRenderer->Start();
 
-	mpRenderer = mpRayTracer; // starting renderer
+	mRenderer = mRayTracer; // starting renderer
 
-	mpCommandPrompt = new CommandPrompt();
-	mpCommandPrompt->Start();
+	//mCommandPrompt = std::unique_ptr<CommandPrompt>(new CommandPrompt());
+	//mCommandPrompt->Start();
 
 	mRunning = true;
 	MSG message;
@@ -157,34 +157,34 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 					double start = Time::Now();
 
-					mpRayTracer->SetScene(mpScene);
-					mpOpenGLRenderer->SetScene(mpScene);
+					mRayTracer->SetScene(mScene);
+					mOpenGLRenderer->SetScene(mScene);
 
 					double end = Time::Now();
 
 					mReloadScene = false;
 					mLastSceneReloadTime = Time::Now();
 
-					mpCommandPrompt->ShowMessage("Elapsed time: %.5f seconds", (end - start));
+					//mCommandPrompt->ShowMessage("Elapsed time: %.5f seconds", (end - start));
 				}
 				else if (mToggleDebugMode && Time::Now() - mLastDebugModeToggleTime > 0.333f)
 				{
 					if (mDebugModeEnabled)
 					{
-						mpRenderer = mpOpenGLRenderer;
+						mRenderer = mOpenGLRenderer;
 					}
 					else
 					{
-						mpRenderer = mpRayTracer;
+						mRenderer = mRayTracer;
 					}
-					mpRenderer->SetScene(mpScene);
+					mRenderer->SetScene(mScene);
 
 					mToggleDebugMode = false;
 					mLastDebugModeToggleTime = Time::Now();
 				}
 
-				mpScene->Update();
-				mpRenderer->Render();
+				mScene->Update();
+				mRenderer->Render();
 				SwapBuffers(mDeviceContextHandle);
 			}
 			catch (std::exception& rException)
@@ -207,7 +207,7 @@ int Application::Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 }
 
 //////////////////////////////////////////////////////////////////////////
-WNDCLASSEX Application::CreateWindowClass()
+WNDCLASSEX SimpleRayTracerApp::CreateWindowClass()
 {
 	WNDCLASSEX windowClass;
 	windowClass.cbSize = sizeof(WNDCLASSEX);
@@ -226,34 +226,18 @@ WNDCLASSEX Application::CreateWindowClass()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::Dispose()
+void SimpleRayTracerApp::Dispose()
 {
-	if (mpRayTracer)
-	{
-		delete mpRayTracer;
-		mpRayTracer = 0;
-	}
+	mRayTracer = nullptr;
+	mOpenGLRenderer = nullptr;
+	mRenderer = nullptr;
+	mScene = nullptr;
 
-	if (mpOpenGLRenderer)
+	/*if (mCommandPrompt)
 	{
-		delete mpOpenGLRenderer;
-		mpOpenGLRenderer = 0;
-	}
-
-	mpRenderer = 0;
-	
-	if (mpScene)
-	{
-		delete mpScene;
-		mpScene = 0;
-	}
-
-	if (mpCommandPrompt)
-	{
-		mpCommandPrompt->Finish();
-		delete mpCommandPrompt;
-		mpCommandPrompt = 0;
-	}
+		mCommandPrompt->Terminate();
+		mCommandPrompt = nullptr;
+	}*/
 	
 	if (mOpenGLRenderingContextHandle)
 	{
@@ -264,16 +248,11 @@ void Application::Dispose()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::LoadSceneFromXML()
+void SimpleRayTracerApp::LoadSceneFromXML()
 {
-	if (mpScene != 0)
-	{
-		delete mpScene;
-	}
-
 	try
 	{
-		mpScene = SceneLoader::LoadFromXML(mpSceneFileName);
+		mScene = SceneLoader::LoadFromXML(mpSceneFileName);
 	}
 	catch (std::exception& rException)
 	{
@@ -281,83 +260,83 @@ void Application::LoadSceneFromXML()
 		Dispose();
 		exit(EXIT_FAILURE);
 	}
-	mpScene->Update();
+	mScene->Update();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraLeft()
+void SimpleRayTracerApp::MoveCameraLeft()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position -= pCamera->localTransform.right();
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position -= camera->localTransform.right();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraRight()
+void SimpleRayTracerApp::MoveCameraRight()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position += pCamera->localTransform.right();
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position += camera->localTransform.right();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraForward()
+void SimpleRayTracerApp::MoveCameraForward()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position += pCamera->localTransform.forward();
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position += camera->localTransform.forward();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraBackward()
+void SimpleRayTracerApp::MoveCameraBackward()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position -= pCamera->localTransform.forward();
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position -= camera->localTransform.forward();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraUp()
+void SimpleRayTracerApp::MoveCameraUp()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position += Vector3F(0, 1, 0);
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position += Vector3F(0, 1, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MoveCameraDown()
+void SimpleRayTracerApp::MoveCameraDown()
 {
 	if (!mDebugModeEnabled)
 	{
 		return;
 	}
 
-	Camera* pCamera = mpScene->GetCamera();
-	pCamera->localTransform.position -= Vector3F(0, 1, 0);
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	camera->localTransform.position -= Vector3F(0, 1, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::KeyDown(unsigned int virtualKey)
+void SimpleRayTracerApp::KeyDown(unsigned int virtualKey)
 {
 	if (virtualKey == VK_ESCAPE)
 	{
@@ -369,7 +348,7 @@ void Application::KeyDown(unsigned int virtualKey)
 	}
 	else if (virtualKey == VK_F2)
 	{
-		mpCommandPrompt->Toggle();
+		//mCommandPrompt->Toggle();
 	}
 	else if (virtualKey == VK_LEFT || virtualKey == 65)
 	{
@@ -398,7 +377,7 @@ void Application::KeyDown(unsigned int virtualKey)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::KeyUp(unsigned int virtualKey)
+void SimpleRayTracerApp::KeyUp(unsigned int virtualKey)
 {
 	if (virtualKey == VK_F5)
 	{
@@ -407,7 +386,7 @@ void Application::KeyUp(unsigned int virtualKey)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MouseButtonDown(unsigned int button, int x, int y)
+void SimpleRayTracerApp::MouseButtonDown(unsigned int button, int x, int y)
 {
 	if (button == MK_RBUTTON)
 	{
@@ -417,7 +396,7 @@ void Application::MouseButtonDown(unsigned int button, int x, int y)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MouseButtonUp(unsigned int button, int x, int y)
+void SimpleRayTracerApp::MouseButtonUp(unsigned int button, int x, int y)
 {
 	if (button == MK_RBUTTON)
 	{
@@ -426,7 +405,7 @@ void Application::MouseButtonUp(unsigned int button, int x, int y)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::MouseMove(int x, int y)
+void SimpleRayTracerApp::MouseMove(int x, int y)
 {
 	if (!mRightMouseButtonPressed)
 	{
@@ -462,50 +441,47 @@ void Application::MouseMove(int x, int y)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::TurnCameraUp()
+void SimpleRayTracerApp::TurnCameraUp()
 {
 	mCameraPitch = clamp(mCameraPitch - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::TurnCameraDown()
+void SimpleRayTracerApp::TurnCameraDown()
 {
 	mCameraPitch = clamp(mCameraPitch + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::TurnCameraLeft()
+void SimpleRayTracerApp::TurnCameraLeft()
 {
 	mCameraYaw += ANGLE_INCREMENT;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::TurnCameraRight()
+void SimpleRayTracerApp::TurnCameraRight()
 {
 	mCameraYaw -= ANGLE_INCREMENT;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void Application::UpdateCameraRotation()
+void SimpleRayTracerApp::UpdateCameraRotation()
 {
 	Vector3F forward = Matrix3F::AngleAxis(mCameraPitch, Vector3F(1, 0, 0)) * 
 		Matrix3F::AngleAxis(mCameraYaw, Vector3F(0, 1, 0)) * Vector3F(0, 0, -1);
 
-	Camera* pCamera = mpScene->GetCamera();
-	Vector3F position = pCamera->localTransform.position;
-
-	pCamera->localTransform.LookAt(position + forward);
+	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	Vector3F position = camera->localTransform.position;
+	camera->localTransform.LookAt(position + forward);
 }
 
-//////////////////////////////////////////////////////////////////////////
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+void SimpleRayTracerApp::Close()
 {
-	Application application;
-	return application.Run(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -519,52 +495,52 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		PostQuitMessage(0);
 		break;
 	case WM_KEYDOWN:
-		Application::s_mpInstance->KeyDown(wParam);
+		SimpleRayTracerApp::s_mpInstance->KeyDown(wParam);
 		break;
 	case WM_KEYUP:
-		Application::s_mpInstance->KeyUp(wParam);
+		SimpleRayTracerApp::s_mpInstance->KeyUp(wParam);
 		break;
 	case WM_LBUTTONDOWN:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonDown(MK_LBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonDown(MK_LBUTTON, x, y);
 		break;
 	case WM_MBUTTONDOWN:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonDown(MK_MBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonDown(MK_MBUTTON, x, y);
 		break;
 	case WM_RBUTTONDOWN:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonDown(MK_RBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonDown(MK_RBUTTON, x, y);
 		break;
 	case WM_LBUTTONUP:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonUp(MK_LBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonUp(MK_LBUTTON, x, y);
 		break;
 	case WM_MBUTTONUP:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonUp(MK_MBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonUp(MK_MBUTTON, x, y);
 		break;
 	case WM_RBUTTONUP:
 		x = GET_X_LPARAM(lParam);
 		y = GET_Y_LPARAM(lParam);
 
-		Application::s_mpInstance->MouseButtonUp(MK_RBUTTON, x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseButtonUp(MK_RBUTTON, x, y);
 		break;
 	case WM_MOUSEMOVE:
 		x = GET_X_LPARAM(lParam); 
 		y = GET_Y_LPARAM(lParam); 
 
-		Application::s_mpInstance->MouseMove(x, y);
+		SimpleRayTracerApp::s_mpInstance->MouseMove(x, y);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);

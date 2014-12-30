@@ -8,11 +8,11 @@
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define swap(a, b) \
-	{ \
+		{ \
 		float tmp = (a); \
 		(a) = (b); \
 		(b) = tmp; \
-	}
+		}
 
 #define MAX_VALUE 100000.0f
 
@@ -71,7 +71,7 @@ struct OBB : public BoundingVolume
 			maxValues.z() = max(vector.z(), maxValues.z());
 		}
 
-		center = (maxValues + minValues) / 2.0f;
+		center = Matrix3F(axis[0], axis[1], axis[2]) * ((maxValues + minValues) / 2.0f);
 
 		return true;
 	}

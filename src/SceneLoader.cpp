@@ -13,52 +13,49 @@
 #include <string.h>
 #include <vector>
 #include <exception>
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////
-Scene* SceneLoader::LoadFromXML(const std::string& rFileName)
+std::unique_ptr<Scene> SceneLoader::LoadFromXML(const std::string& fileName)
 {
-	if (rFileName.empty())
+	if (fileName.empty())
 	{
 		throw std::exception("empty scene file name");
 	}
 
-	char* pFileContent = FileReader::Read(rFileName, FileReader::FM_TEXT);
+	std::string sceneFileContent = FileReader::Read(fileName, FileReader::FM_TEXT);
 
-	if (pFileContent == 0)
+	if (sceneFileContent.empty())
 	{
 		throw std::exception("empty scene file");
 	}
 
 	rapidxml::xml_document<> doc;
-	doc.parse<0>(pFileContent);
+	doc.parse<0>(const_cast<char*>(sceneFileContent.c_str()));
 
-	Scene* pScene = new Scene();
-	std::map<int, SceneObject*> sceneObjectIds;
+	std::unique_ptr<Scene> scene(new Scene());
+	std::map<int, std::shared_ptr<SceneObject> > sceneObjects;
 	std::map<int, int> sceneObjectParenting;
-	rapidxml::xml_node<>* pRoot = doc.first_node();
-	if (pRoot && strcmp("Scene", pRoot->name()) == 0)
+	auto* root = doc.first_node();
+	if (root && strcmp("Scene", root->name()) == 0)
 	{
-		for (rapidxml::xml_node<>* pChild = pRoot->first_node(); pChild; pChild = pChild->next_sibling())
+		for (auto* child = root->first_node(); child; child = child->next_sibling())
 		{
-			Traverse(pScene, sceneObjectIds, sceneObjectParenting, pChild);
+			Traverse(scene, sceneObjects, sceneObjectParenting, child);
 		}
 
-		std::map<int, SceneObject*>::iterator it = sceneObjectIds.begin();
-		while (it != sceneObjectIds.end())
+		auto it = sceneObjects.begin();
+		while (it != sceneObjects.end())
 		{
-			SceneObject* pSceneObject = it->second;
+			auto sceneObject = it->second;
 			int parentId = sceneObjectParenting[it->first];
-
-			SceneObject* pParent = FindParent(sceneObjectIds, parentId);
-
-			if (pParent != 0)
+			if (sceneObjects.find(parentId) != sceneObjects.end())
 			{
-				pSceneObject->parent = pParent;
-				pParent->children.push_back(pSceneObject);
+				auto parentSceneObject = sceneObjects[parentId];
+				sceneObject->parent = parentSceneObject;
+				parentSceneObject->children.push_back(sceneObject);
 			}
-
-			pScene->AddSceneObject(pSceneObject);
-
+			scene->AddSceneObject(sceneObject);
 			it++;
 		}
 	}
@@ -67,212 +64,201 @@ Scene* SceneLoader::LoadFromXML(const std::string& rFileName)
 		throw std::exception("invalid scene file");
 	}
 
-	return pScene;
+	return scene;
 }
 
 //////////////////////////////////////////////////////////////////////////
-SceneObject* SceneLoader::FindParent(std::map<int, SceneObject*> pSceneObjectIds, int id)
+void SceneLoader::Traverse(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& sceneObjectParenting, rapidxml::xml_node<>* xmlNode)
 {
-	if (pSceneObjectIds.find(id) == pSceneObjectIds.end())
+	if (strcmp("Camera", xmlNode->name()) == 0)
 	{
-		return 0;
+		ParseCamera(scene, xmlNode);
 	}
-
-	return pSceneObjectIds[id];
-}
-
-//////////////////////////////////////////////////////////////////////////
-void SceneLoader::Traverse(Scene* pScene, std::map<int, SceneObject*>& pSceneObjectIds, std::map<int, int>& pSceneObjectParenting, rapidxml::xml_node<>* pXmlNode)
-{
-	if (strcmp("Camera", pXmlNode->name()) == 0)
+	else if (strcmp("Light", xmlNode->name()) == 0)
 	{
-		ParseCamera(pScene, pXmlNode);
+		ParseLight(scene, xmlNode);
 	}
-	else if (strcmp("Light", pXmlNode->name()) == 0)
+	else if (strcmp("Sphere", xmlNode->name()) == 0)
 	{
-		ParseLight(pScene, pXmlNode);
+		ParseSphere(scene, sceneObjects, sceneObjectParenting, xmlNode);
 	}
-	else if (strcmp("Sphere", pXmlNode->name()) == 0)
+	else if (strcmp("Mesh", xmlNode->name()) == 0)
 	{
-		ParseSphere(pScene, pSceneObjectIds, pSceneObjectParenting, pXmlNode);
-	}
-	else if (strcmp("Mesh", pXmlNode->name()) == 0)
-	{
-		ParseMesh(pScene, pSceneObjectIds, pSceneObjectParenting, pXmlNode);
+		ParseMesh(scene, sceneObjects, sceneObjectParenting, xmlNode);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseCamera(Scene* pScene, rapidxml::xml_node<>* pXmlNode)
+void SceneLoader::ParseCamera(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>* xmlNode)
 {
-	float fov = GetFloat(pXmlNode, "fov");
-	float nearZ = GetFloat(pXmlNode, "near");
-	float farZ = GetFloat(pXmlNode, "far");
-	Vector3F& rEyePosition = GetVector3F(pXmlNode, "eyePosition");
-	Vector3F& rForward = GetVector3F(pXmlNode, "forward");
-	Vector3F& rUp = GetVector3F(pXmlNode, "up");
+	float fov = GetFloat(xmlNode, "fov");
+	float nearZ = GetFloat(xmlNode, "near");
+	float farZ = GetFloat(xmlNode, "far");
+	Vector3F rEyePosition = GetVector3F(xmlNode, "eyePosition");
+	Vector3F rForward = GetVector3F(xmlNode, "forward");
+	Vector3F rUp = GetVector3F(xmlNode, "up");
 
-	Camera* pCamera = new Camera(fov, nearZ, farZ);
-	pCamera->localTransform.position = rEyePosition;
-	pCamera->localTransform.LookAt(rForward, rUp);
+	std::unique_ptr<Camera> camera(new Camera(fov, nearZ, farZ));
+	camera->localTransform.position = rEyePosition;
+	camera->localTransform.LookAt(rForward, rUp);
 
-	pScene->SetCamera(pCamera);
+	scene->SetCamera(camera);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseLight(Scene* pScene, rapidxml::xml_node<>* pXmlNode)
+void SceneLoader::ParseLight(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>* xmlNode)
 {
-	char* pType = GetValue(pXmlNode, "type");
+	std::string type = GetValue(xmlNode, "type");
 
-	ColorRGBA& rDiffuseColor = GetColorRGBA(pXmlNode, "diffuseColor");
-	ColorRGBA& rSpecularColor = GetColorRGBA(pXmlNode, "specularColor");
-	float intensity = GetFloat(pXmlNode, "intensity");
+	ColorRGBA& rDiffuseColor = GetColorRGBA(xmlNode, "diffuseColor");
+	ColorRGBA& rSpecularColor = GetColorRGBA(xmlNode, "specularColor");
+	float intensity = GetFloat(xmlNode, "intensity");
 
-	if (strcmp("point", pType) == 0)
+	if (type == "point")
 	{
-		Vector3F& rPosition = GetVector3F(pXmlNode, "position");
-		float attenuation = GetFloat(pXmlNode, "attenuation");
+		Vector3F& rPosition = GetVector3F(xmlNode, "position");
+		float attenuation = GetFloat(xmlNode, "attenuation");
 
-		pScene->AddLight(new PointLight(rDiffuseColor, rSpecularColor, intensity, rPosition, attenuation));
+		scene->AddLight(std::unique_ptr<Light>(new PointLight(rDiffuseColor, rSpecularColor, intensity, rPosition, attenuation)));
 	}
-	else if (strcmp("directional", pType) == 0)
+	else if (type == "directional")
 	{
-		Vector3F& rDirection = GetVector3F(pXmlNode, "direction");
+		Vector3F& rDirection = GetVector3F(xmlNode, "direction");
 
-		pScene->AddLight(new DirectionalLight(rDiffuseColor, rSpecularColor, intensity, rDirection));
+		scene->AddLight(std::unique_ptr<Light>(new DirectionalLight(rDiffuseColor, rSpecularColor, intensity, rDirection)));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseSphere(Scene* pScene, std::map<int, SceneObject*>& pSceneObjectIds, std::map<int, int>& pSceneObjectParenting, rapidxml::xml_node<>* pXmlNode)
+void SceneLoader::ParseSphere(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& sceneObjectParenting, rapidxml::xml_node<>* xmlNode)
 {
-	float radius = GetFloat(pXmlNode, "radius");
-	Sphere* pSphere = new Sphere(radius);
+	float radius = GetFloat(xmlNode, "radius");
+	std::shared_ptr<SceneObject> sphere(new Sphere(radius));
 
-	int id = GetInt(pXmlNode, "id");
-	int parentId = GetInt(pXmlNode, "parentId");
+	int id = GetInt(xmlNode, "id");
+	int parentId = GetInt(xmlNode, "parentId");
 
-	pSceneObjectParenting[id] = parentId;
+	sceneObjectParenting[id] = parentId;
 
-	for (rapidxml::xml_node<>* pChild = pXmlNode->first_node(); pChild; pChild = pChild->next_sibling())
+	for (rapidxml::xml_node<>* pChild = xmlNode->first_node(); pChild; pChild = pChild->next_sibling())
 	{
 		if (strcmp("Transform", pChild->name()) == 0)
 		{
-			ParseTransform(pChild, pSphere->localTransform);
+			ParseTransform(pChild, sphere->localTransform);
 		}
 		else if (strcmp("Material", pChild->name()) == 0)
 		{
-			ParseMaterial(pChild, pSphere->material);
+			ParseMaterial(pChild, sphere->material);
 		}
 	}
 
-	pSceneObjectIds[id] = pSphere;
+	sceneObjects[id] = sphere;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseMesh(Scene* pScene, std::map<int, SceneObject*>& pSceneObjectIds, std::map<int, int>& pSceneObjectParenting, rapidxml::xml_node<>* pXmlNode)
+void SceneLoader::ParseMesh(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& sceneObjectParenting, rapidxml::xml_node<>* xmlNode)
 {
-	Mesh* pMesh = new Mesh();
+	std::shared_ptr<Mesh> mesh(new Mesh());
 
-	int id = GetInt(pXmlNode, "id");
-	int parentId = GetInt(pXmlNode, "parentId");
+	int id = GetInt(xmlNode, "id");
+	int parentId = GetInt(xmlNode, "parentId");
 
-	pSceneObjectParenting[id] = parentId;
+	sceneObjectParenting[id] = parentId;
 
-	char* pVerticesFileName = GetValue(pXmlNode, "vertices");
-	char* pNormalsFileName = GetValue(pXmlNode, "normals");
-	char* pUVsFileName = GetValue(pXmlNode, "uvs");
-	char* pIndicesFileName = GetValue(pXmlNode, "indices");
+	std::string verticesFileName = GetValue(xmlNode, "vertices");
+	std::string pNormalsFileName = GetValue(xmlNode, "normals");
+	std::string uvsFileName = GetValue(xmlNode, "uvs");
+	std::string indicesFileName = GetValue(xmlNode, "indices");
 
-	ReadFileToVector(pVerticesFileName, pMesh->vertices);
-	ReadFileToVector(pNormalsFileName, pMesh->normals);
-	ReadFileToVector(pUVsFileName, pMesh->uvs);
-	ReadFileToVector(pIndicesFileName, pMesh->indices);
+	ReadFileToVector(verticesFileName, mesh->vertices);
+	ReadFileToVector(pNormalsFileName, mesh->normals);
+	ReadFileToVector(uvsFileName, mesh->uvs);
+	ReadFileToVector(indicesFileName, mesh->indices);
 
-	for (rapidxml::xml_node<>* pChild = pXmlNode->first_node(); pChild; pChild = pChild->next_sibling())
+	for (auto* child = xmlNode->first_node(); child; child = child->next_sibling())
 	{
-		if (strcmp("Transform", pChild->name()) == 0)
+		if (strcmp("Transform", child->name()) == 0)
 		{
-			ParseTransform(pChild, pMesh->localTransform);
+			ParseTransform(child, mesh->localTransform);
 		}
-		else if (strcmp("Material", pChild->name()) == 0)
+		else if (strcmp("Material", child->name()) == 0)
 		{
-			ParseMaterial(pChild, pMesh->material);
+			ParseMaterial(child, mesh->material);
 		}
 	}
 
 	// TODO: generalize bounding volume creation
-	BoundingVolume* pBoundingVolume = new BoundingSphere();
-	pBoundingVolume->Compute(pMesh->vertices);
-	pMesh->boundingVolume = pBoundingVolume;
+	std::unique_ptr<BoundingVolume> pBoundingVolume(new BoundingSphere());
+	pBoundingVolume->Compute(mesh->vertices);
+	mesh->boundingVolume = std::move(pBoundingVolume);
 
-	pSceneObjectIds[id] = pMesh;
+	sceneObjects[id] = mesh;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseTransform(rapidxml::xml_node<>* pXmlNode, Transform& rTransform)
+void SceneLoader::ParseTransform(rapidxml::xml_node<>* xmlNode, Transform& transform)
 {
-	rTransform.scale = GetMatrix3x3F(pXmlNode, "scale");
-	rTransform.rotation = GetMatrix3x3F(pXmlNode, "rotation");
-	rTransform.position = GetVector3F(pXmlNode, "position");
+	transform.scale = GetMatrix3x3F(xmlNode, "scale");
+	transform.rotation = GetMatrix3x3F(xmlNode, "rotation");
+	transform.position = GetVector3F(xmlNode, "position");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ParseMaterial(rapidxml::xml_node<>* pXmlNode, Material& rMaterial)
+void SceneLoader::ParseMaterial(rapidxml::xml_node<>* xmlNode, Material& material)
 {
-	rMaterial.ambientColor = GetColorRGBA(pXmlNode, "ambientColor");
-	rMaterial.diffuseColor = GetColorRGBA(pXmlNode, "diffuseColor");
-	rMaterial.specularColor = GetColorRGBA(pXmlNode, "specularColor");
-	rMaterial.shininess = GetFloat(pXmlNode, "shininess");
+	material.ambientColor = GetColorRGBA(xmlNode, "ambientColor");
+	material.diffuseColor = GetColorRGBA(xmlNode, "diffuseColor");
+	material.specularColor = GetColorRGBA(xmlNode, "specularColor");
+	material.shininess = GetFloat(xmlNode, "shininess");
 
-	char* pTextureFileName = GetValue(pXmlNode, "texture");
-	if (pTextureFileName)
+	std::string textureFileName = GetValue(xmlNode, "texture");
+	if (!textureFileName.empty())
 	{
-		rMaterial.texture = TextureLoader::LoadFromPNG(pTextureFileName);
+		material.texture = TextureLoader::LoadFromPNG(textureFileName);
 	}
 
-	rMaterial.transparent = GetBool(pXmlNode, "transparent");
-	rMaterial.reflection = GetFloat(pXmlNode, "reflection");
-	rMaterial.refraction = GetFloat(pXmlNode, "refraction");
+	material.transparent = GetBool(xmlNode, "transparent");
+	material.reflection = GetFloat(xmlNode, "reflection");
+	material.refraction = GetFloat(xmlNode, "refraction");
 }
 
 //////////////////////////////////////////////////////////////////////////
-char* SceneLoader::GetValue(rapidxml::xml_node<>* pXmlNode, const char* pName)
+std::string SceneLoader::GetValue(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
-	for (rapidxml::xml_attribute<>* attribute = pXmlNode->first_attribute(); attribute; attribute = attribute->next_attribute())
+	for (rapidxml::xml_attribute<>* attribute = xmlNode->first_attribute(); attribute; attribute = attribute->next_attribute())
 	{
-		if (strcmp(pName, attribute->name()) == 0)
+		if (name == attribute->name())
 		{
 			return attribute->value();
 		}
 	}
 
-	return 0;
+	return "";
 }
 
 //////////////////////////////////////////////////////////////////////////
-float SceneLoader::GetFloat(rapidxml::xml_node<>* pXmlNode, const char* pName)
+float SceneLoader::GetFloat(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
-	char* pFloat = GetValue(pXmlNode, pName);
 	float f = 0;
-	if (pFloat)
+	std::string floatStr = GetValue(xmlNode, name);
+	if (!floatStr.empty())
 	{
 		int n;
-		n = sscanf(pFloat, "%f", &f);
+		n = sscanf(floatStr.c_str(), "%f", &f);
 	}
 
 	return f;
 }
 
 //////////////////////////////////////////////////////////////////////////
-int SceneLoader::GetInt(rapidxml::xml_node<>* pXmlNode, const char* pName)
+int SceneLoader::GetInt(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
-	char* pInt = GetValue(pXmlNode, pName);
 	int i = 0;
-	if (pInt)
+	std::string intStr = GetValue(xmlNode, name);
+	if (!intStr.empty())
 	{
 		int n;
-		n = sscanf(pInt, "%d", &i);
+		n = sscanf(intStr.c_str(), "%d", &i);
 		if (n < 1)
 		{
 			throw std::exception("invalid attribute size");
@@ -283,14 +269,14 @@ int SceneLoader::GetInt(rapidxml::xml_node<>* pXmlNode, const char* pName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SceneLoader::GetBool(rapidxml::xml_node<>* pXmlNode, const char* pName)
+bool SceneLoader::GetBool(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
-	char* pBool = GetValue(pXmlNode, pName);
 	unsigned int b = 0;
-	if (pBool)
+	std::string boolStr = GetValue(xmlNode, name);
+	if (!boolStr.empty())
 	{
 		int n;
-		n = sscanf(pBool, "%d", &b);
+		n = sscanf(boolStr.c_str(), "%d", &b);
 		if (n < 1)
 		{
 			throw std::exception("invalid attribute size");
@@ -301,28 +287,28 @@ bool SceneLoader::GetBool(rapidxml::xml_node<>* pXmlNode, const char* pName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA SceneLoader::GetColorRGBA(rapidxml::xml_node<>* pXmlNode, const char* pName)
+ColorRGBA SceneLoader::GetColorRGBA(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
 	ColorRGBA color = ColorRGBA::WHITE;
-	char* pColor = GetValue(pXmlNode, pName);
-	if (pColor)
+	std::string colorStr = GetValue(xmlNode, name);
+	if (!colorStr.empty())
 	{
 		int n;
-		n = sscanf(pColor, "%f, %f, %f, %f", &color.r(), &color.g(), &color.b(), &color.a());
+		n = sscanf(colorStr.c_str(), "%f, %f, %f, %f", &color.r(), &color.g(), &color.b(), &color.a());
 	}
 
 	return color;
 }
 
 //////////////////////////////////////////////////////////////////////////
-Vector3F SceneLoader::GetVector3F(rapidxml::xml_node<>* pXmlNode, const char* pName)
+Vector3F SceneLoader::GetVector3F(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
 	Vector3F vector;
-	char* pVector = GetValue(pXmlNode, pName);
-	if (pVector)
+	std::string vectorStr = GetValue(xmlNode, name);
+	if (!vectorStr.empty())
 	{
 		int n;
-		n = sscanf(pVector, "%f, %f, %f", &vector.x(), &vector.y(), &vector.z());
+		n = sscanf(vectorStr.c_str(), "%f, %f, %f", &vector.x(), &vector.y(), &vector.z());
 		if (n < 1)
 		{
 			throw std::exception("invalid attribute size");
@@ -333,14 +319,14 @@ Vector3F SceneLoader::GetVector3F(rapidxml::xml_node<>* pXmlNode, const char* pN
 }
 
 //////////////////////////////////////////////////////////////////////////
-Matrix3x3F SceneLoader::GetMatrix3x3F(rapidxml::xml_node<>* pXmlNode, const char* pName)
+Matrix3x3F SceneLoader::GetMatrix3x3F(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
 	float m11, m12, m13, m21, m22, m23, m31, m32, m33;
-	char* pVector = GetValue(pXmlNode, pName);
-	if (pVector)
+	std::string vectorStr = GetValue(xmlNode, name);
+	if (!vectorStr.empty())
 	{
 		int n;
-		n = sscanf(pVector, "%f, %f, %f, %f, %f, %f, %f, %f, %f", &m11, &m12, &m13, &m21, &m22, &m23, &m31, &m32, &m33);
+		n = sscanf(vectorStr.c_str(), "%f, %f, %f, %f, %f, %f, %f, %f, %f", &m11, &m12, &m13, &m21, &m22, &m23, &m31, &m32, &m33);
 		if (n < 1)
 		{
 			throw std::exception("invalid attribute size");
@@ -351,63 +337,50 @@ Matrix3x3F SceneLoader::GetMatrix3x3F(rapidxml::xml_node<>* pXmlNode, const char
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ReadFileToVector(char* pFileName, std::vector<Vector3F>& rVector)
+void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vector3F>& v)
 {
-	char* pBuffer = FileReader::Read(pFileName, FileReader::FM_TEXT);
-
+	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
 	std::vector<std::string> lines;
-	StringUtils::Tokenize(pBuffer, "\n", lines);
-
+	StringUtils::Tokenize(buffer, "\n", lines);
 	float x, y, z;
 	for (unsigned int i = 0; i < lines.size(); i++)
 	{
-		std::string& rLine = lines[i];
-
-		sscanf(rLine.c_str(), "%f, %f, %f", &x, &y, &z);
-
-		rVector.push_back(Vector3F(x, y, z));
+		std::string& line = lines[i];
+		sscanf(line.c_str(), "%f, %f, %f", &x, &y, &z);
+		v.push_back(Vector3F(x, y, z));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ReadFileToVector(char* pFileName, std::vector<Vector2F>& rVector)
+void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vector2F>& v)
 {
-	char* pBuffer = FileReader::Read(pFileName, FileReader::FM_TEXT);
-
+	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
 	std::vector<std::string> lines;
-	StringUtils::Tokenize(pBuffer, "\n", lines);
-
+	StringUtils::Tokenize(buffer, "\n", lines);
 	float x, y;
 	for (unsigned int i = 0; i < lines.size(); i++)
 	{
 		std::string& rLine = lines[i];
-		
 		sscanf(rLine.c_str(), "%f, %f", &x, &y);
-
-		rVector.push_back(Vector2F(x, y));
+		v.push_back(Vector2F(x, y));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SceneLoader::ReadFileToVector(char* pFileName, std::vector<unsigned int>& rVector)
+void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<unsigned int>& v)
 {
-	char* pBuffer = FileReader::Read(pFileName, FileReader::FM_TEXT);
-
+	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
 	std::vector<std::string> values;
-	StringUtils::Tokenize(pBuffer, " ", values);
-
+	StringUtils::Tokenize(buffer, " ", values);
 	int index;
 	for (unsigned int i = 0; i < values.size(); i++)
 	{
 		std::string& rValue = values[i];
-
 		sscanf(rValue.c_str(), "%d", &index);
-
 		if (index < 0)
 		{
 			throw std::exception("invalid index");
 		}
-
-		rVector.push_back((unsigned int)index);
+		v.push_back((unsigned int)index);
 	}
 }

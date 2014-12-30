@@ -9,7 +9,7 @@
 #include "Vector4F.h"
 #include "Matrix3x3F.h"
 #include "Matrix4x4F.h"
-#include "Application.h"
+#include "SimpleRayTracerApp.h"
 
 #include <windows.h>
 #include <GL/GL.h>
@@ -20,9 +20,9 @@
 
 #include "Common.h"
 
-const unsigned int RayTracer::DEPTH_BUFFER_SIZE = Application::SCREEN_WIDTH * Application::SCREEN_HEIGHT;
-const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * Application::BYTES_PER_PIXEL;
-const unsigned int RayTracer::RAYS_METADATA_SIZE = Application::SCREEN_WIDTH * Application::SCREEN_HEIGHT;
+const unsigned int RayTracer::DEPTH_BUFFER_SIZE = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
+const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * SimpleRayTracerApp::BYTES_PER_PIXEL;
+const unsigned int RayTracer::RAYS_METADATA_SIZE = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
 const unsigned int RayTracer::MAX_ITERATIONS = 5;
 
 #define clampColor(v, vmin, vmax) \
@@ -64,12 +64,12 @@ PFNGLUNMAPBUFFERARBPROC pglUnmapBufferARB = 0;
 
 //////////////////////////////////////////////////////////////////////////
 RayTracer::RayTracer() :
-	mpRaysMetadata(0),
+	mpRaysMetadata(nullptr),
 	mTextureId(0),
 	mPBOId(0),
 	mPBOSupported(false),
-	mpTextureData(0),
-	mpDepthBuffer(0)
+	mpTextureData(nullptr),
+	mpDepthBuffer(nullptr)
 {
 }
 
@@ -88,17 +88,9 @@ RayTracer::~RayTracer()
 		mPBOId = 0;
 	}
 
-	if (mpDepthBuffer != 0)
-	{
-		delete[] mpDepthBuffer;
-		mpDepthBuffer = 0;
-	}
-
-	if (mpRaysMetadata != 0)
-	{
-		delete[] mpRaysMetadata;
-		mpRaysMetadata = 0;
-	}
+	mpTextureData = nullptr;
+	mpDepthBuffer = nullptr;
+	mpRaysMetadata = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,15 +120,16 @@ void RayTracer::Start()
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-		mpTextureData = 0;
+		mpTextureData = nullptr;
 	}
 	else
 	{
-		mpTextureData = new unsigned char[COLOR_BUFFER_SIZE];
-		memset(mpTextureData, 0, sizeof(unsigned char) * COLOR_BUFFER_SIZE);
+		mpTextureData = std::unique_ptr<unsigned char[]>(new unsigned char[COLOR_BUFFER_SIZE]);
+		// TODO:
+		memset(mpTextureData.get(), 0, sizeof(unsigned char) * COLOR_BUFFER_SIZE);
 	}
 
-	mpDepthBuffer = new float[DEPTH_BUFFER_SIZE];
+	mpDepthBuffer = std::unique_ptr<float[]>(new float[DEPTH_BUFFER_SIZE]);
 
 	glGenTextures(1, &mTextureId);
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
@@ -144,10 +137,10 @@ void RayTracer::Start()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, Application::SCREEN_WIDTH, Application::SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, SimpleRayTracerApp::SCREEN_WIDTH, SimpleRayTracerApp::SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData.get());
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	mpRaysMetadata = new RayMetadata[RAYS_METADATA_SIZE];
+	mpRaysMetadata = std::unique_ptr<RayMetadata[]>(new RayMetadata[RAYS_METADATA_SIZE]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -158,9 +151,9 @@ void RayTracer::OnSetScene()
 	{
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Application::SCREEN_WIDTH, Application::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SimpleRayTracerApp::SCREEN_WIDTH, SimpleRayTracerApp::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData.get());
 
-	float zFar = mpScene->GetCamera()->zFar();
+	float zFar = mScene->GetCamera()->zFar();
 	for (unsigned int i = 0; i < DEPTH_BUFFER_SIZE; i++)
 	{
 		mpDepthBuffer[i] = zFar;
@@ -170,13 +163,13 @@ void RayTracer::OnSetScene()
 	{
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-		unsigned char* pColorBuffer = (unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-
-		if (pColorBuffer != 0)
+		std::unique_ptr<unsigned char[]> pColorBuffer((unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
+		if (pColorBuffer != nullptr)
 		{
 			TraceRays(pColorBuffer);
-			glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
 		}
+		glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+		pColorBuffer.release();
 
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 	}
@@ -205,7 +198,7 @@ void RayTracer::Render()
 	{
 		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Application::SCREEN_WIDTH, Application::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SimpleRayTracerApp::SCREEN_WIDTH, SimpleRayTracerApp::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData.get());
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -257,62 +250,63 @@ void RayTracer::SetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rayOri
 }
 
 //////////////////////////////////////////////////////////////////////////
-void RayTracer::TraceRays(unsigned char* pColorBuffer)
+void RayTracer::TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer)
 {
-	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0, rayMetadataIndex = 0; y < Application::SCREEN_HEIGHT; y++)
+	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0, rayMetadataIndex = 0; y < SimpleRayTracerApp::SCREEN_HEIGHT; y++)
 	{
-		for (unsigned int x = 0; x < Application::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++)
+		for (unsigned int x = 0; x < SimpleRayTracerApp::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++)
 		{
-			Ray& rRay = mpScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
+			Ray& rRay = mScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
 			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex]);
 			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex], 0);
-			setColor(pColorBuffer, colorBufferIndex, color);
+			setColor(colorBuffer, colorBufferIndex, color);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, SceneObject* pIgnoreSceneObject) const
+ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, std::shared_ptr<SceneObject> sceneObjectToIgnore) const
 {
-	ColorRGBA finalColor = Application::CLEAR_COLOR;
+	ColorRGBA finalColor = SimpleRayTracerApp::CLEAR_COLOR;
 
 	if (iteration > MAX_ITERATIONS)
 	{
 		return finalColor;
 	}
 
-	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
+	for (unsigned int i = 0; i < mScene->NumberOfSceneObjects(); i++)
 	{
-		SceneObject* pSceneObject = mpScene->GetSceneObject(i);
-
-		if (pIgnoreSceneObject != 0 && pSceneObject == pIgnoreSceneObject)
+		if (auto sceneObject = mScene->GetSceneObject(i).lock())
 		{
-			continue;
-		}
-
-		RayHit hit;
-		if (pSceneObject->Intersect(rRay, hit))
-		{
-			float depth = rRay.origin.Distance(hit.point);
-
-			if (depth >= *pCurrentDepth)
+			if (sceneObjectToIgnore != 0 && sceneObject == sceneObjectToIgnore)
 			{
 				continue;
 			}
 
-			*pCurrentDepth = depth;
-
-			SetRayMetadata(rRayMetadata, rRay.origin, hit.point);
-
-			ColorRGBA currentColor = Shade(pSceneObject, rRay, hit, rRayMetadata, iteration);
-
-			if (pSceneObject->material.transparent)
+			RayHit hit;
+			if (sceneObject->Intersect(rRay, hit))
 			{
-				finalColor = currentColor.Blend(finalColor);
-			}
-			else
-			{
-				finalColor = currentColor;
+				float depth = rRay.origin.Distance(hit.point);
+
+				if (depth >= *pCurrentDepth)
+				{
+					continue;
+				}
+
+				*pCurrentDepth = depth;
+
+				SetRayMetadata(rRayMetadata, rRay.origin, hit.point);
+
+				ColorRGBA currentColor = Shade(sceneObject, rRay, hit, rRayMetadata, iteration);
+
+				if (sceneObject->material.transparent)
+				{
+					finalColor = currentColor.Blend(finalColor);
+				}
+				else
+				{
+					finalColor = currentColor;
+				}
 			}
 		}
 	}
@@ -321,29 +315,29 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
+ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
 {
-	Material& rMaterial = pSceneObject->material;
-	const Camera* pCamera = mpScene->GetCamera();
+	Material& rMaterial = sceneObject->material;
+	const std::unique_ptr<Camera>& camera = mScene->GetCamera();
 
-	ColorRGBA color = Application::GLOBAL_AMBIENT_LIGHT * rMaterial.ambientColor;
+	ColorRGBA color = SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT * rMaterial.ambientColor;
 
 	Vector3F viewerDirection = (rRay.origin - rHit.point).Normalized();
 	const Vector3F& rNormal = rHit.normal;
 
-	for (unsigned int j = 0; j < mpScene->NumberOfLights(); j++)
+	for (unsigned int j = 0; j < mScene->NumberOfLights(); j++)
 	{
-		Light* pLight = mpScene->GetLight(j);
+		const std::unique_ptr<Light>& light = mScene->GetLight(j);
 
 		float distanceToLight = -1;
 		Vector3F lightDirection;
-		if (is(pLight, DirectionalLight))
+		if (is(light, DirectionalLight))
 		{
-			lightDirection = cast(pLight, DirectionalLight)->direction;
+			lightDirection = cast(light, DirectionalLight)->direction;
 		}
-		else if (is(pLight, PointLight))
+		else if (is(light, PointLight))
 		{
-			Vector3F lightPosition = cast(pLight, PointLight)->position;
+			Vector3F lightPosition = cast(light, PointLight)->position;
 			lightDirection = (lightPosition - rHit.point).Normalized();
 			distanceToLight = lightPosition.Distance(rHit.point);
 		}
@@ -353,7 +347,7 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 		}
 
 		Ray shadowRay(rHit.point, lightDirection);
-		if (IsLightBlocked(shadowRay, distanceToLight, pSceneObject))
+		if (IsLightBlocked(shadowRay, distanceToLight, sceneObject))
 		{
 			continue;
 		}
@@ -364,11 +358,11 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 			diffuseColor *= rMaterial.texture->Fetch(rHit.uv);
 		}
 
-		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *pLight, lightDirection, viewerDirection, rNormal);
+		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *light, lightDirection, viewerDirection, rNormal);
 
-		if (is(pLight, PointLight))
+		if (is(light, PointLight))
 		{
-			float distanceAttenuation = 1.0f / max(cast(pLight, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
+			float distanceAttenuation = 1.0f / max(cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
 			colorContribution *= distanceAttenuation;
 		}
 
@@ -379,12 +373,12 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 	{
 		Vector3F reflectionDirection = (-viewerDirection).Reflection(rNormal).Normalized();
 		Ray reflectionRay(rHit.point, reflectionDirection);
-		float newDepth = pCamera->zFar();
+		float newDepth = camera->zFar();
 		RayMetadata* pReflectionRayMetadata = new RayMetadata();
 		pReflectionRayMetadata->start = reflectionRay.origin;
 		pReflectionRayMetadata->isReflection = true;
 		rRayMetadata.next = pReflectionRayMetadata;
-		color += rMaterial.reflection * TraceRay(reflectionRay, *pReflectionRayMetadata, &newDepth, iteration + 1, pSceneObject);
+		color += rMaterial.reflection * TraceRay(reflectionRay, *pReflectionRayMetadata, &newDepth, iteration + 1, sceneObject);
 	}
 	else if (rMaterial.refraction > 0)
 	{
@@ -396,12 +390,12 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 		Vector3F& rRefractionDirection = sinT * rT + cosT * (-rNormal);
 
 		Ray refractionRay(rHit.point, rRefractionDirection);
-		float newDepth = pCamera->zFar();
+		float newDepth = camera->zFar();
 		RayMetadata* pRefractionRayMetadata = new RayMetadata();
 		pRefractionRayMetadata->isRefraction = true;
 		pRefractionRayMetadata->start = refractionRay.origin;
 		rRayMetadata.next = pRefractionRayMetadata;
-		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, iteration + 1, pSceneObject));
+		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, iteration + 1, sceneObject));
 	}
 
 	clampColor(color, 0, 1);
@@ -410,28 +404,30 @@ ColorRGBA RayTracer::Shade(SceneObject* pSceneObject, const Ray &rRay, const Ray
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool RayTracer::IsLightBlocked(const Ray& rShadowRay, float distanceToLight, SceneObject* pOriginSceneObject) const
+bool RayTracer::IsLightBlocked(const Ray& rShadowRay, float distanceToLight, std::shared_ptr<SceneObject> origin) const
 {
-	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
+	for (unsigned int i = 0; i < mScene->NumberOfSceneObjects(); i++)
 	{
-		SceneObject* pSceneObject = mpScene->GetSceneObject(i);
-
-		if (pSceneObject == pOriginSceneObject)
+		if (auto sceneObject = mScene->GetSceneObject(i).lock())
 		{
-			continue;
-		}
+			if (sceneObject == origin)
+			{
+				continue;
+			}
 
-		RayHit hit;
-		if (pSceneObject->Intersect(rShadowRay, hit))
-		{
-			if (distanceToLight == -1 )
+			RayHit hit;
+			if (sceneObject->Intersect(rShadowRay, hit))
 			{
-				return true;
+				if (distanceToLight == -1)
+				{
+					return true;
+				}
+				else if (distanceToLight > hit.point.Distance(rShadowRay.origin))
+				{
+					return true;
+				}
 			}
-			else if (distanceToLight > hit.point.Distance(rShadowRay.origin))
-			{
-				return true;
-			}
+
 		}
 	}
 

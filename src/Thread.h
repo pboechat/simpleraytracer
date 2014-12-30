@@ -23,28 +23,30 @@ protected:
 class Thread : public Runnable
 {
 public:
+	Thread() : mThreadHandle(0)
+	{
+	}
+
+	virtual ~Thread()
+	{
+	}
+
 	void Start()
 	{
 		mThreadHandle = CreateThread(NULL, 0, &Runnable::RunThread, this, 0, NULL);
 	}
 
-	virtual void OnFinish()
+	virtual void Stop()
 	{
 	}
 
-	void Finish()
+	virtual void Terminate(bool isInitiator = false)
 	{
-		OnFinish();
-
+		Stop();
 		if (WaitForSingleObject(mThreadHandle, INFINITE) != WAIT_OBJECT_0)
 		{
 			std::cerr << "Error waiting for thread to finish" << std::endl;
 		}
-	}
-
-	virtual void Terminate()
-	{
-		TerminateThread(mThreadHandle, -1);
 	}
 
 	friend class Runnable;

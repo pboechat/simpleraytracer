@@ -6,57 +6,44 @@
 #include "SceneObject.h"
 
 #include <vector>
+#include <memory>
 
 class Scene
 {
 public:
 	Scene() :
-	  mpCamera(0)
+	  mCamera(nullptr)
 	{
 	}
 
 	~Scene()
 	{
-		for (unsigned int i = 0; i < mLights.size(); i++)
-		{
-			delete mLights[i];
-		}
 		mLights.clear();
-
-		for (unsigned int i = 0; i < mSceneObjects.size(); i++)
-		{
-			delete mSceneObjects[i];
-		}
 		mSceneObjects.clear();
-
-		if (mpCamera != 0)
-		{
-			delete mpCamera;
-			mpCamera = 0;
-		}
+		mCamera = nullptr;
 	}
 
-	inline void SetCamera(Camera* pCamera)
+	inline void SetCamera(std::unique_ptr<Camera>& camera)
 	{
-		mpCamera = pCamera;
+		mCamera = std::move(camera);
 	}
 
-	inline Camera* GetCamera()
+	inline std::unique_ptr<Camera>& GetCamera()
 	{
-		return mpCamera;
+		return mCamera;
 	}
 
-	inline const Camera* GetCamera() const
+	inline const std::unique_ptr<Camera>& GetCamera() const
 	{
-		return mpCamera;
+		return mCamera;
 	}
 
-	inline void AddLight(Light* pLight)
+	inline void AddLight(std::unique_ptr<Light>&& pLight)
 	{
-		mLights.push_back(pLight);
+		mLights.emplace_back(std::move(pLight));
 	}
 
-	inline void AddSceneObject(SceneObject* pSceneObject)
+	inline void AddSceneObject(std::shared_ptr<SceneObject>& pSceneObject)
 	{
 		mSceneObjects.push_back(pSceneObject);
 	}
@@ -71,19 +58,19 @@ public:
 		return mSceneObjects.size();
 	}
 
-	inline Light* GetLight(unsigned int i) const
+	inline const std::unique_ptr<Light>& GetLight(unsigned int i) const
 	{
 		return mLights[i];
 	}
 
-	inline SceneObject* GetSceneObject(unsigned int i) const
+	inline std::weak_ptr<SceneObject> GetSceneObject(unsigned int i) const
 	{
 		return mSceneObjects[i];
 	}
 
 	void Update()
 	{
-		mpCamera->Update();
+		mCamera->Update();
 
 		for (unsigned int i = 0; i < mSceneObjects.size(); i++)
 		{
@@ -92,9 +79,9 @@ public:
 	}
 
 private:
-	Camera* mpCamera;
-	std::vector<Light*> mLights;
-	std::vector<SceneObject*> mSceneObjects;
+	std::unique_ptr<Camera> mCamera;
+	std::vector<std::unique_ptr<Light> > mLights;
+	std::vector<std::shared_ptr<SceneObject> > mSceneObjects;
 
 };
 

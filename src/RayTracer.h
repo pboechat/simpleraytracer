@@ -16,7 +16,7 @@ public:
 	RayTracer();
 	virtual ~RayTracer();
 
-	inline RayMetadata* GetRaysMetadata()
+	inline const std::unique_ptr<RayMetadata[]>& GetRaysMetadata() const
 	{
 		return mpRaysMetadata;
 	}
@@ -33,20 +33,20 @@ private:
 	static const unsigned int RAYS_METADATA_SIZE;
 	static const unsigned int MAX_ITERATIONS;
 
-	RayMetadata* mpRaysMetadata;
+	std::unique_ptr<RayMetadata[]> mpRaysMetadata;
 	unsigned int mTextureId;
 	unsigned int mPBOId;
 	bool mPBOSupported;
-	unsigned char* mpTextureData;
-	float* mpDepthBuffer;
+	std::unique_ptr<unsigned char[]> mpTextureData;
+	std::unique_ptr<float[]> mpDepthBuffer;
 
 	void CreateBuffers();
-	void TraceRays(unsigned char* pColorBuffer);
+	void TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer);
 	void ResetRayMetadata(RayMetadata& rRayMetadata);
 	void SetRayMetadata(RayMetadata& rayMetadata, const Vector3F& rayOrigin, const Vector3F& hitPoint) const;
-	ColorRGBA TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, SceneObject* pIgnoreSceneObject = 0) const;
-	ColorRGBA Shade(SceneObject* pSceneObject, const Ray& rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const;
-	bool IsLightBlocked(const Ray& rShadowRay, float distanceToLight, SceneObject* pOriginSceneObject) const;
+	ColorRGBA TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, std::shared_ptr<SceneObject> pIgnoreSceneObject = std::shared_ptr<SceneObject>(nullptr)) const;
+	ColorRGBA Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray& rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const;
+	bool IsLightBlocked(const Ray& rShadowRay, float distanceToLight, std::shared_ptr<SceneObject> origin) const;
 	ColorRGBA BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const ColorRGBA& rMaterialSpecularColor, float materialShininess, const Light& rLight, const Vector3F& rLightDirection, const Vector3F& rViewerDirection, const Vector3F& rNormal) const;
 	
 };

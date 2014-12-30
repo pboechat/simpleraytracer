@@ -13,34 +13,34 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 class SceneLoader
 {
 public:
-	static Scene* LoadFromXML(const std::string& rFileName);
+	static std::unique_ptr<Scene> LoadFromXML(const std::string& rFileName);
 
 private:
 	SceneLoader() {}
 	~SceneLoader() {}
 
-	static void Traverse(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
-	static void ParseCamera(Scene* pScene, rapidxml::xml_node<>* pXmlNode);
-	static void ParseLight(Scene* pScene, rapidxml::xml_node<>* pXmlNode);
-	static void ParseSphere(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
-	static void ParseMesh(Scene* pScene, std::map<int, SceneObject*>& rSceneObjectIds, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* pXmlNode);
-	static char* GetValue(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static float GetFloat(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static int GetInt(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static bool GetBool(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static ColorRGBA GetColorRGBA(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static Vector3F GetVector3F(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static Matrix3x3F GetMatrix3x3F(rapidxml::xml_node<>* pXmlNode, const char* pName);
-	static void ReadFileToVector(char* pFileName, std::vector<Vector3F>& rVector);
-	static void ReadFileToVector(char* pFileName, std::vector<Vector2F>& rVector);
-	static void ReadFileToVector(char* pFileName, std::vector<unsigned int>& rVector);
-	static void ParseTransform(rapidxml::xml_node<>* pXmlNode, Transform& rTransform);
-	static void ParseMaterial(rapidxml::xml_node<>* pXmlNode, Material& rMaterial);
-	static SceneObject* FindParent(std::map<int, SceneObject*> rSceneObjectIds, int id);
+	static void Traverse(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
+	static void ParseCamera(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>* xmlNode);
+	static void ParseLight(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>* xmlNode);
+	static void ParseSphere(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
+	static void ParseMesh(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
+	static std::string GetValue(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static float GetFloat(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static int GetInt(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static bool GetBool(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static ColorRGBA GetColorRGBA(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static Vector3F GetVector3F(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static Matrix3x3F GetMatrix3x3F(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static void ReadFileToVector(const std::string& fileName, std::vector<Vector3F>& v);
+	static void ReadFileToVector(const std::string& fileName, std::vector<Vector2F>& v);
+	static void ReadFileToVector(const std::string& fileName, std::vector<unsigned int>& v);
+	static void ParseTransform(rapidxml::xml_node<>* xmlNode, Transform& transform);
+	static void ParseMaterial(rapidxml::xml_node<>* xmlNode, Material& material);
 
 };
 

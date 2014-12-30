@@ -3,8 +3,8 @@
 
 #define radian(x) x * 0.017453293f
 
-#define cast(x, y) dynamic_cast<y*>(x)
-#define is(x, y) dynamic_cast<y*>(x) != 0
+#define cast(x, T) dynamic_cast<T*>(x.get())
+#define is(x, T) dynamic_cast<T*>(x.get()) != 0
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))

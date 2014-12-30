@@ -8,19 +8,20 @@
 #include "CommandPrompt.h"
 #include "ColorRGBA.h"
 
+#include <memory>
 #include <windows.h>
 #include <GL/GL.h>
 #include <GL/GLU.h>
 #include "glext.h"
 
 //////////////////////////////////////////////////////////////////////////
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+int main(unsigned int argc, const char** argv);
 
 //////////////////////////////////////////////////////////////////////////
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 //////////////////////////////////////////////////////////////////////////
-class Application
+class SimpleRayTracerApp
 {
 public:
 	static const unsigned int SCREEN_WIDTH;
@@ -29,19 +30,20 @@ public:
 	static const ColorRGBA CLEAR_COLOR;
 	static const ColorRGBA GLOBAL_AMBIENT_LIGHT;
 
-	inline static Application* GetInstance()
+	inline static SimpleRayTracerApp* GetInstance()
 	{
 		return s_mpInstance;
 	}
 
-	int Run(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+	int Run(unsigned int argc, const char** argv);
 
 	void EnableDebugMode();
 	void DisableDebugMode();
 	void EnableRayDebugging(const Vector2F& rRayToDebug);
 	void DisableRayDebugging();
+	void Close();
 
-	friend int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+	friend int main(unsigned int argc, const char** argv);
 	friend LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
@@ -54,7 +56,7 @@ private:
 	static const float ANGLE_INCREMENT;
 	static const float CAMERA_PITCH_LIMIT;
 
-	static Application* s_mpInstance;
+	static SimpleRayTracerApp* s_mpInstance;
 
 	bool mRunning;
 	HINSTANCE mApplicationHandle;
@@ -62,25 +64,25 @@ private:
 	HDC mDeviceContextHandle;
 	int mPixelFormat;
 	HGLRC mOpenGLRenderingContextHandle;
-	char* mpSceneFileName;
-	Scene* mpScene;
-	RayTracer* mpRayTracer;
-	OpenGLRenderer* mpOpenGLRenderer;
-	Renderer* mpRenderer;
+	const char* mpSceneFileName;
+	std::shared_ptr<Scene> mScene;
+	std::shared_ptr<RayTracer> mRayTracer;
+	std::shared_ptr<OpenGLRenderer> mOpenGLRenderer;
+	std::shared_ptr<Renderer> mRenderer;
 	bool mDebugModeEnabled;
 	bool mReloadScene;
 	double mLastSceneReloadTime;
 	bool mToggleDebugMode;
 	double mLastDebugModeToggleTime;
-	CommandPrompt* mpCommandPrompt;
+	std::unique_ptr<CommandPrompt> mCommandPrompt;
 	bool mRightMouseButtonPressed;
 	Vector2F mLastMousePosition;
 	float mCameraYaw;
 	float mCameraPitch;
 	float mCameraRoll;
-	
-	Application();
-	~Application();
+
+	SimpleRayTracerApp();
+	~SimpleRayTracerApp();
 
 	void CheckCommandPrompt();
 	void LoadSceneFromXML();

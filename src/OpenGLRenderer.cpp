@@ -7,7 +7,7 @@
 #include "Light.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
-#include "Application.h"
+#include "SimpleRayTracerApp.h"
 
 #include <windows.h>
 #include <GL/GL.h>
@@ -56,37 +56,37 @@ void OpenGLRenderer::Render()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	const Camera* pCamera = mpScene->GetCamera();
+	const std::unique_ptr<Camera>& camera = mScene->GetCamera();
 
 	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(pCamera->projection().Transpose()[0]);
+	glLoadMatrixf(camera->projection().Transpose()[0]);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glClearColor(Application::CLEAR_COLOR.r(), Application::CLEAR_COLOR.g(), Application::CLEAR_COLOR.b(), Application::CLEAR_COLOR.a());
+	glClearColor(SimpleRayTracerApp::CLEAR_COLOR.r(), SimpleRayTracerApp::CLEAR_COLOR.g(), SimpleRayTracerApp::CLEAR_COLOR.b(), SimpleRayTracerApp::CLEAR_COLOR.a());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &Application::GLOBAL_AMBIENT_LIGHT[0]);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT[0]);
 
-	for (unsigned int i = 0; i < mpScene->NumberOfLights(); i++)
+	for (unsigned int i = 0; i < mScene->NumberOfLights(); i++)
 	{
 		glEnable(GL_LIGHT0 + i);
-		Light* pLight = mpScene->GetLight(i);
+		const std::unique_ptr<Light>& light = mScene->GetLight(i);
 
-		glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, &(pLight->diffuseColor * pLight->intensity)[0]);
-		glLightfv(GL_LIGHT0 + i, GL_SPECULAR, &(pLight->specularColor * pLight->intensity)[0]);
+		glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, &(light->diffuseColor * light->intensity)[0]);
+		glLightfv(GL_LIGHT0 + i, GL_SPECULAR, &(light->specularColor * light->intensity)[0]);
 
-		if (is(pLight, DirectionalLight))
+		if (is(light, DirectionalLight))
 		{
-			Vector4F lightDirection = pCamera->inverseRotation() * cast(pLight, DirectionalLight)->direction.ToVector4F();
+			Vector4F lightDirection = camera->inverseRotation() * cast(light, DirectionalLight)->direction.ToVector4F();
 			lightDirection.w() = 0;
 
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
-		else if (is(pLight, PointLight))
+		else if (is(light, PointLight))
 		{
-			Vector4F lightPosition = pCamera->view() * cast(pLight, PointLight)->position.ToVector4F();
+			Vector4F lightPosition = camera->view() * cast(light, PointLight)->position.ToVector4F();
 			lightPosition.w() = 1;
 
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
@@ -96,19 +96,20 @@ void OpenGLRenderer::Render()
 		}
 	}
 
-	glLoadMatrixf(pCamera->view().Transpose()[0]);
+	glLoadMatrixf(camera->view().Transpose()[0]);
 
-	for (unsigned int i = 0; i < mpScene->NumberOfSceneObjects(); i++)
+	for (unsigned int i = 0; i < mScene->NumberOfSceneObjects(); i++)
 	{
-		SceneObject* pSceneObject = mpScene->GetSceneObject(i);
-
-		if (is(pSceneObject, Mesh))
+		if (auto pSceneObject = mScene->GetSceneObject(i).lock())
 		{
-			RenderMesh(cast(pSceneObject, Mesh));
-		}
-		else if (is(pSceneObject, Sphere))
-		{
-			RenderSphere(cast(pSceneObject, Sphere));
+			if (is(pSceneObject, Mesh))
+			{
+				RenderMesh(cast(pSceneObject, Mesh));
+			}
+			else if (is(pSceneObject, Sphere))
+			{
+				RenderSphere(cast(pSceneObject, Sphere));
+			}
 		}
 	}
 

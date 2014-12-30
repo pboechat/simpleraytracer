@@ -15,7 +15,7 @@ public:
 	{
 		size_t fileSize;
 
-		unsigned char* pEncodedData = reinterpret_cast<unsigned char*>(FileReader::Read(rFileName, fileSize, FileReader::FM_BINARY));
+		const unsigned char* pEncodedData = reinterpret_cast<const unsigned char*>(FileReader::Read(rFileName, fileSize, FileReader::FM_BINARY).data());
 		std::vector<unsigned char>* pDecodedData = new std::vector<unsigned char>();
 		unsigned long width;
 		unsigned long height;

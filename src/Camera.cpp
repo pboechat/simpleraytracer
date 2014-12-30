@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "Application.h"
+#include "SimpleRayTracerApp.h"
 
 #include <cmath>
 
@@ -11,7 +11,7 @@ Camera::Camera(float fov, float _zNear, float _zFar) :
 	mNear(_zNear),
 	mFar(_zFar)
 {
-	mAspectRatio = Application::SCREEN_WIDTH / (float)Application::SCREEN_HEIGHT;
+	mAspectRatio = SimpleRayTracerApp::SCREEN_WIDTH / (float)SimpleRayTracerApp::SCREEN_HEIGHT;
 	mProjectionPlaneHeight = (float)(2.0 * mNear * tan(radian(mFov) / 2.0f));
 	mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;
 
@@ -46,6 +46,6 @@ void Camera::OnUpdate()
 //////////////////////////////////////////////////////////////////////////
 Ray Camera::GetRayFromScreenCoordinates(unsigned int x, unsigned int y) const
 {
-	Vector3F direction = (-mNear * mZ) + (mProjectionPlaneHeight * (y / (float)Application::SCREEN_HEIGHT - 0.5f) * mY) + (mProjectionPlaneWidth * (x / (float)Application::SCREEN_WIDTH - 0.5f) * mX);
+	Vector3F direction = (-mNear * mZ) + (mProjectionPlaneHeight * (y / (float)SimpleRayTracerApp::SCREEN_HEIGHT - 0.5f) * mY) + (mProjectionPlaneWidth * (x / (float)SimpleRayTracerApp::SCREEN_WIDTH - 0.5f) * mX);
 	return Ray(mWorldTransform.position, direction);
 }

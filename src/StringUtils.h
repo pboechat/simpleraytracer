@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <functional>
 #include <cctype>
 
 class StringUtils

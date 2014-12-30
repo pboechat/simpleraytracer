@@ -12,11 +12,12 @@
 
 #include <cmath>
 #include <vector>
+#include <memory>
 
 struct SceneObject
 {
-	SceneObject* parent;
-	std::vector<SceneObject*> children;
+	std::weak_ptr<SceneObject> parent;
+	std::vector<std::weak_ptr<SceneObject> > children;
 	Material material;
 	Transform localTransform;
 
@@ -38,14 +39,17 @@ struct SceneObject
 	{
 		mWorldTransform = localTransform;
 
-		if (parent != 0)
+		if (auto parentPtr = parent.lock())
 		{
-			mWorldTransform = parent->mWorldTransform * mWorldTransform;
+			mWorldTransform = parentPtr->mWorldTransform * mWorldTransform;
 		}
 
 		for (unsigned int i = 0; i < children.size(); i++)
 		{
-			children[i]->Update();
+			if (auto childPtr = children[i].lock())
+			{
+				childPtr->Update();
+			}
 		}
 
 		OnUpdate();
@@ -54,8 +58,7 @@ struct SceneObject
 protected:
 	Transform mWorldTransform;
 
-	SceneObject() :
-		parent(0)
+	SceneObject()
 	{
 	}
 

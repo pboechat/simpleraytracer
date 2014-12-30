@@ -11,11 +11,11 @@ public:
 	CommandPrompt();
 	virtual ~CommandPrompt();
 
-	void Open();
-	void Close();
+	void Show();
+	void Hide();
 	void Toggle();
 	void ShowMessage(const char* pFormat, ...);
-	virtual void OnFinish();
+	virtual void Stop();
 
 protected:
 	virtual DWORD Run();

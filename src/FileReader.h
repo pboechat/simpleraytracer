@@ -15,15 +15,15 @@ public:
 		FM_TEXT, FM_BINARY
 	};
 
-	static char* Read(const std::string& rFileName, FileMode mode)
+	static std::string Read(const std::string& rFileName, FileMode mode)
 	{
 		size_t unusedFileSize;
 		return Read(rFileName, unusedFileSize, mode);
 	}
 
-	static char* Read(const std::string& rFileName, size_t& fileSize, FileMode mode)
+	static std::string Read(const std::string& rFileName, size_t& fileSize, FileMode mode)
 	{
-		char* pBuffer = 0;
+		std::string out;
 		fileSize = 0;
 
 		if (!rFileName.empty())
@@ -42,15 +42,17 @@ public:
 
 			if (size > 0)
 			{
-				pBuffer = (char*) malloc(sizeof(char) * (size + 1));
+				char* pBuffer = (char*) malloc(sizeof(char) * (size + 1));
 				size = fread(pBuffer, sizeof(char), size, file);
 				pBuffer[size] = '\0';
+				out = std::string(pBuffer);
+				delete pBuffer;
 			}
 
 			fclose(file);
 		}
 
-		return pBuffer;
+		return out;
 	}
 
 private:

@@ -7,19 +7,24 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #define EPSILON 0.000001f
 
 struct Mesh : public SceneObject
 {
+private:
+	std::vector<Vector3F> cachedVertices;
+	std::vector<Vector3F> cachedNormals;
+
+public:
 	std::vector<Vector3F> vertices;
 	std::vector<Vector3F> normals;
 	std::vector<Vector2F> uvs;
 	std::vector<unsigned int> indices;
-	BoundingVolume* boundingVolume;
+	std::unique_ptr<BoundingVolume> boundingVolume;
 
-	Mesh() :
-		boundingVolume(0)
+	Mesh()
 	{
 	}
 
@@ -34,6 +39,31 @@ struct Mesh : public SceneObject
 		if (boundingVolume != 0)
 		{
 			boundingVolume->Update(mWorldTransform);
+		}
+
+		CreateCache();
+	}
+
+	void CreateCache()
+	{
+		//cachedNormals.clear();
+		//cachedVertices.clear();
+
+		cachedVertices.resize(vertices.size());
+		cachedNormals.resize(normals.size());
+		for (unsigned int i = 0; i < indices.size(); i += 3)
+		{
+			unsigned int i1 = indices[i];
+			unsigned int i2 = indices[i + 1];
+			unsigned int i3 = indices[i + 2];
+
+			cachedVertices[i1] = mWorldTransform * vertices[i1];
+			cachedVertices[i2] = mWorldTransform * vertices[i2];
+			cachedVertices[i3] = mWorldTransform * vertices[i3];
+
+			cachedNormals[i1] = mWorldTransform.rotation * normals[i1];
+			cachedNormals[i2] = mWorldTransform.rotation * normals[i2];
+			cachedNormals[i3] = mWorldTransform.rotation * normals[i3];
 		}
 	}
 
@@ -50,12 +80,12 @@ struct Mesh : public SceneObject
 			unsigned int i2 = indices[i + 1];
 			unsigned int i3 = indices[i + 2];
 
-			Vector3F p1 = mWorldTransform * vertices[i1];
-			Vector3F p2 = mWorldTransform * vertices[i2];
-			Vector3F p3 = mWorldTransform * vertices[i3];
+			const Vector3F& v1 = cachedVertices[i1];
+			const Vector3F& v2 = cachedVertices[i2];
+			const Vector3F& v3 = cachedVertices[i3];
 
 			float u, v, t;
-			if (BackFaceCullTriangleIntersection(rRay, p1, p2, p3, &u, &v, &t))
+			if (BackFaceCullTriangleIntersection(rRay, v1, v2, v3, &u, &v, &t))
 			{
 				rHit.point = rRay.origin + t * rRay.direction;
 
@@ -63,16 +93,16 @@ struct Mesh : public SceneObject
 
 				if (normals.size() > 0)
 				{
-					Vector3F n1 = mWorldTransform.rotation * normals[i1];
-					Vector3F n2 = mWorldTransform.rotation * normals[i2];
-					Vector3F n3 = mWorldTransform.rotation * normals[i3];
+					const Vector3F& n1 = cachedNormals[i1];
+					const Vector3F& n2 = cachedNormals[i2];
+					const Vector3F& n3 = cachedNormals[i3];
 
 					rHit.normal = (w * n1 + u * n2 + v * n3).Normalized();
 				}
 				else
 				{
-					const Vector3F& rEdge1 = (p2 - p1);
-					const Vector3F& rEdge2 = (p3 - p1);
+					const Vector3F& rEdge1 = (v2 - v1);
+					const Vector3F& rEdge2 = (v3 - v1);
 
 					rHit.normal = rEdge1.Cross(rEdge2);
 				}

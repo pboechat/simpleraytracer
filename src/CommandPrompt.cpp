@@ -1,6 +1,6 @@
 #include "CommandPrompt.h"
 #include "StringUtils.h"
-#include "Application.h"
+#include "SimpleRayTracerApp.h"
 #include "Vector2F.h"
 
 #include <stdio.h>
@@ -23,7 +23,7 @@ CommandPrompt::~CommandPrompt()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CommandPrompt::OnFinish()
+void CommandPrompt::Stop()
 {
 	mRunning = false;
 }
@@ -31,7 +31,7 @@ void CommandPrompt::OnFinish()
 //////////////////////////////////////////////////////////////////////////
 void CommandPrompt::ShowMessage(const char* pFormat, ...)
 {
-	Open();
+	Show();
 
 	std::cout << std::endl;
 
@@ -48,11 +48,11 @@ void CommandPrompt::Toggle()
 {
 	if (mOpen)
 	{
-		Close();
+		Hide();
 	}
 	else
 	{
-		Open();
+		Show();
 	}
 }
 
@@ -83,14 +83,16 @@ bool CommandPrompt::IsValidCharacter(char c)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CommandPrompt::Open()
+void CommandPrompt::Show()
 {
 	if (mOpen)
 	{
 		return;
 	}
 
-	AllocConsole();
+	/*AllocConsole();
+
+	SetConsoleCtrlHandler(ConsoleHandlerRoutine, true);
 
 	HANDLE stdOutputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	int hCrt = _open_osfhandle((long) stdOutputHandle, _O_TEXT);
@@ -102,7 +104,7 @@ void CommandPrompt::Open()
 	hCrt = _open_osfhandle((long) stdInputHandle, _O_TEXT);
 	FILE* hfIn = _fdopen(hCrt, "r");
 	setvbuf(hfIn, NULL, _IONBF, 128);
-	*stdin = *hfIn;
+	*stdin = *hfIn;*/
 
 	std::cout << "> ";
 
@@ -110,14 +112,14 @@ void CommandPrompt::Open()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CommandPrompt::Close()
+void CommandPrompt::Hide()
 {
 	if (!mOpen)
 	{
 		return;
 	}
 
-	FreeConsole();
+	//FreeConsole();
 
 	mOpen = false;
 }
@@ -133,11 +135,11 @@ DWORD CommandPrompt::Run()
 			continue;
 		}
 
-		DWORD charsRead;
-		INPUT_RECORD inputRecords[128];
-		ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &inputRecords[0], 128, &charsRead);
+		//DWORD charsRead;
+		//INPUT_RECORD inputRecords[128];
+		//ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &inputRecords[0], 128, &charsRead);
 
-		for (unsigned int i = 0; i < charsRead; i++)
+		/*for (unsigned int i = 0; i < charsRead; i++)
 		{
 			if (inputRecords[i].EventType == KEY_EVENT)
 			{
@@ -212,10 +214,10 @@ DWORD CommandPrompt::Run()
 			mCommand.clear();
 			std::cout << std::endl << std::endl << "> ";
 			mParseCommand = false;
-		}
+		}*/
 	}
 
-	Close();
+	Hide();
 
 	return 0;
 }
@@ -239,11 +241,11 @@ void CommandPrompt::ParseCommand()
 
 		if (tokens[1] == "off")
 		{
-			Application::GetInstance()->DisableDebugMode();
+			SimpleRayTracerApp::GetInstance()->DisableDebugMode();
 		}
 		else if (tokens[1] == "on")
 		{
-			Application::GetInstance()->EnableDebugMode();
+			SimpleRayTracerApp::GetInstance()->EnableDebugMode();
 		}
 		else
 		{
@@ -267,7 +269,7 @@ void CommandPrompt::ParseCommand()
 		{
 			if (tokens[1] == "off")
 			{
-				Application::GetInstance()->DisableRayDebugging();
+				SimpleRayTracerApp::GetInstance()->DisableRayDebugging();
 			}
 			else
 			{
@@ -285,7 +287,7 @@ void CommandPrompt::ParseCommand()
 				return;
 			}
 
-			Application::GetInstance()->EnableRayDebugging(Vector2F((float)x, (float)y));
+			SimpleRayTracerApp::GetInstance()->EnableRayDebugging(Vector2F((float)x, (float)y));
 		}
 	}
 	else 
