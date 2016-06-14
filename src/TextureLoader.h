@@ -1,32 +1,40 @@
 #ifndef TEXTURELOADER_H_
 #define TEXTURELOADER_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <cassert>
+
 #include "PicoPNG.h"
 #include "FileReader.h"
 #include "Texture.h"
 
-#include <string>
-#include <vector>
-
 class TextureLoader
 {
 public:
-	static Texture* LoadFromPNG(const std::string& rFileName)
+	static std::unique_ptr<Texture> LoadFromPNG(const std::string& rFileName)
 	{
 		size_t fileSize;
-
-		const unsigned char* pEncodedData = reinterpret_cast<const unsigned char*>(FileReader::Read(rFileName, fileSize, FileReader::FM_BINARY).data());
-		std::vector<unsigned char>* pDecodedData = new std::vector<unsigned char>();
+		auto encodedData = FileReader::Read<unsigned char>(rFileName, fileSize, FileMode::FM_BINARY);
 		unsigned long width;
 		unsigned long height;
-		PicoPNG::decodePNG(*pDecodedData, width, height, pEncodedData, fileSize, true);
-
-		return new Texture(width, height, &(*pDecodedData)[0]);
+		std::unique_ptr<unsigned char[]> decodedData;
+		{
+			std::vector<unsigned char> decodedData0;
+			if (PicoPNG::decodePNG(decodedData0, width, height, encodedData.get(), fileSize, true) != 0)
+				throw std::runtime_error("could not decode PNG file: " + rFileName);
+			size_t size = decodedData0.size();
+			assert(size > 0);
+			auto pDecodedData = new unsigned char[size];
+			memcpy(pDecodedData, &decodedData0[0], sizeof(unsigned char) * size);
+			decodedData = std::unique_ptr<unsigned char[]>(pDecodedData);
+		}
+		return std::unique_ptr<Texture>(new Texture(width, height, std::move(decodedData)));
 	}
 
 private:
-	TextureLoader() {}
-	~TextureLoader() {}
+	TextureLoader() = default;
 
 };
 

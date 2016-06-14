@@ -1,6 +1,8 @@
 #ifndef TEXTURE_H_
 #define TEXTURE_H_
 
+#include <memory>
+
 #include "ColorRGBA.h"
 #include "Vector2F.h"
 
@@ -8,31 +10,20 @@ struct Texture
 {
 	unsigned long width;
 	unsigned long height;
-	unsigned char* data;
+	std::unique_ptr<unsigned char[]> data;
 
 	Texture() :
 		width(0),
 		height(0),
-		data(0)
+		data(nullptr)
 	{
 	}
 
-	Texture(unsigned long width, unsigned long height, unsigned char* pData)
+	Texture(unsigned long width, unsigned long height, std::unique_ptr<unsigned char[]> data) : width(width), height(height), data(std::move(data))
 	{
-		this->width = width;
-		this->height = height;
-		this->data = pData;
 	}
 
-	~Texture()
-	{
-		if (data != 0)
-		{
-			delete[] data;
-		}
-	}
-
-	ColorRGBA Fetch(const Vector2F& rUV)
+	ColorRGBA Sample(const Vector2F& rUV)
 	{
 		unsigned int x = static_cast<unsigned int>(rUV.x() * (width - 1));
 		unsigned int y = static_cast<unsigned int>((1 - rUV.y()) * (height - 1));

@@ -5,59 +5,51 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
-#include <exception>
+#include <stdexcept>
+
+enum FileMode
+{
+	FM_TEXT, FM_BINARY
+};
 
 class FileReader
 {
 public:
-	enum FileMode
-	{
-		FM_TEXT, FM_BINARY
-	};
-
-	static std::string Read(const std::string& rFileName, FileMode mode)
+	template <typename T>
+	static std::unique_ptr<T[]> Read(const std::string& rFileName, FileMode mode, bool trailingEndOfString = false)
 	{
 		size_t unusedFileSize;
-		return Read(rFileName, unusedFileSize, mode);
+		return Read<T>(rFileName, unusedFileSize, mode, trailingEndOfString);
 	}
 
-	static std::string Read(const std::string& rFileName, size_t& fileSize, FileMode mode)
+	template <typename T>
+	static std::unique_ptr<T[]> Read(const std::string& rFileName, size_t& fileSize, FileMode mode, bool trailingEndOfString = false)
 	{
-		std::string out;
+		std::unique_ptr<T[]> out(nullptr);
 		fileSize = 0;
-
 		if (!rFileName.empty())
 		{
 			FILE* file = fopen(rFileName.c_str(), GetFileModeString(mode));
-
 			if (file == 0)
-			{
-				throw std::exception("file not found");
-			}
-
+				throw std::runtime_error("file not found: " + rFileName);
 			fseek(file, 0, SEEK_END);
-			long size = ftell(file);
+			auto size = ftell(file);
 			fileSize = size;
 			rewind(file);
-
-			if (size > 0)
-			{
-				char* pBuffer = (char*) malloc(sizeof(char) * (size + 1));
-				size = fread(pBuffer, sizeof(char), size, file);
-				pBuffer[size] = '\0';
-				out = std::string(pBuffer);
-				delete pBuffer;
-			}
-
+			if (size == 0)
+				throw std::runtime_error("empty file: " + rFileName);
+			auto pBuffer = (T*)malloc(sizeof(T) * (size + trailingEndOfString));
+			size = fread(pBuffer, sizeof(T), size, file);
+			out = std::unique_ptr<T[]>(pBuffer);
+			if (trailingEndOfString)
+				out[size] = (T)'\0';
 			fclose(file);
 		}
-
 		return out;
 	}
 
 private:
-	FileReader();
-	~FileReader();
+	FileReader() = default;
 
 	static char* GetFileModeString(FileMode mode)
 	{
@@ -73,6 +65,7 @@ private:
 			return NULL;
 		}
 	}
+
 };
 
 #endif

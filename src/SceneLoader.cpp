@@ -23,7 +23,7 @@ std::unique_ptr<Scene> SceneLoader::LoadFromXML(const std::string& fileName)
 		throw std::exception("empty scene file name");
 	}
 
-	std::string sceneFileContent = FileReader::Read(fileName, FileReader::FM_TEXT);
+	std::string sceneFileContent(FileReader::Read<char>(fileName, FileMode::FM_TEXT, true).get());
 
 	if (sceneFileContent.empty())
 	{
@@ -339,7 +339,7 @@ Matrix3x3F SceneLoader::GetMatrix3x3F(rapidxml::xml_node<>* xmlNode, const std::
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vector3F>& v)
 {
-	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
+	std::string buffer(FileReader::Read<char>(fileName, FileMode::FM_TEXT, true).get());
 	std::vector<std::string> lines;
 	StringUtils::Tokenize(buffer, "\n", lines);
 	float x, y, z;
@@ -354,7 +354,7 @@ void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vect
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vector2F>& v)
 {
-	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
+	std::string buffer(FileReader::Read<char>(fileName, FileMode::FM_TEXT, true).get());
 	std::vector<std::string> lines;
 	StringUtils::Tokenize(buffer, "\n", lines);
 	float x, y;
@@ -369,7 +369,7 @@ void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<Vect
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<unsigned int>& v)
 {
-	std::string buffer = FileReader::Read(fileName, FileReader::FM_TEXT);
+	std::string buffer(FileReader::Read<char>(fileName, FileMode::FM_TEXT, true).get());
 	std::vector<std::string> values;
 	StringUtils::Tokenize(buffer, " ", values);
 	int index;

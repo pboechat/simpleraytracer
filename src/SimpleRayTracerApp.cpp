@@ -103,6 +103,12 @@ void SimpleRayTracerApp::DisableRayDebugging()
 //////////////////////////////////////////////////////////////////////////
 int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 {
+	if (argc < 2)
+	{
+		MessageBox(0, "no scene file specified", WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		exit(EXIT_FAILURE);
+	}
+
 	mApplicationHandle = GetModuleHandle(0);
 
 	win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");

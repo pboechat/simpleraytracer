@@ -355,7 +355,7 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		ColorRGBA diffuseColor = rMaterial.diffuseColor;
 		if (rMaterial.texture != 0)
 		{
-			diffuseColor *= rMaterial.texture->Fetch(rHit.uv);
+			diffuseColor *= rMaterial.texture->Sample(rHit.uv);
 		}
 
 		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *light, lightDirection, viewerDirection, rNormal);
