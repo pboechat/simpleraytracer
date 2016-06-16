@@ -1,3 +1,4 @@
+#include "Vector4F.h"
 #include "Vector3F.h"
 
 Vector3F operator + (float scalar, const Vector3F& rVector)

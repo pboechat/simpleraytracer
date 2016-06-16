@@ -10,8 +10,8 @@
 struct Camera : public SceneObject
 {
 public:
-	Camera(float fov, float _zNear, float _zFar);
-	virtual ~Camera();
+	Camera(float fov, float near, float far);
+	virtual ~Camera() = default;
 
 	inline const Matrix4F& projection() const
 	{

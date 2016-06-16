@@ -10,13 +10,15 @@
 #include "Matrix3x3F.h"
 #include "Matrix4x4F.h"
 #include "SimpleRayTracerApp.h"
+#include "Time.h"
 
 #include <windows.h>
 #include <GL/GL.h>
 #include <GL/GLU.h>
 #include "glext.h"
 #include <cmath>
-#include <exception>
+#include <stdexcept>
+#include <iostream>
 
 #include "Common.h"
 
@@ -166,7 +168,11 @@ void RayTracer::OnSetScene()
 		std::unique_ptr<unsigned char[]> pColorBuffer((unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
 		if (pColorBuffer != nullptr)
 		{
+			auto start = Time::Now();
 			TraceRays(pColorBuffer);
+			auto end = Time::Now();
+			// DEBUG:
+			std::cout << "Ray tracing took " << (end - start) << " seconds" << std::endl;
 		}
 		glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
 		pColorBuffer.release();
@@ -343,7 +349,7 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		}
 		else 
 		{
-			throw std::exception("unimplemented light type");
+			throw std::runtime_error("unimplemented light type");
 		}
 
 		Ray shadowRay(rHit.point, lightDirection);

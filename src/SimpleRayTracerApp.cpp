@@ -1,5 +1,4 @@
 #include "SimpleRayTracerApp.h"
-#include "Time.h"
 #include "Vector3F.h"
 #include "ColorRGBA.h"
 #include "Sphere.h"
@@ -51,16 +50,11 @@ SimpleRayTracerApp::SimpleRayTracerApp() :
 	mRayTracer(0),
 	mOpenGLRenderer(0),
 	mRenderer(0),
-	mDebugModeEnabled(false),
-	mReloadScene(true),
-	mLastSceneReloadTime(0),
-	mToggleDebugMode(false),
-	mLastDebugModeToggleTime(0),
-	//mCommandPrompt(nullptr),
+	mLoadScene(true),
 	mRightMouseButtonPressed(false),
+	mLastMousePosition(-1, -1),
 	mCameraYaw(0),
-	mCameraPitch(0),
-	mCameraRoll(0)
+	mCameraPitch(0)
 {
 	s_mpInstance = this;
 }
@@ -72,32 +66,16 @@ SimpleRayTracerApp::~SimpleRayTracerApp()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::EnableDebugMode()
-{
-	mDebugModeEnabled = true;
-	mToggleDebugMode = true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::DisableDebugMode()
-{
-	mDebugModeEnabled = false;
-	mToggleDebugMode = true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::EnableRayDebugging(const Vector2F& rRayToDebug)
 {
 	unsigned int rayIndex = (unsigned int)rRayToDebug.y() * SCREEN_WIDTH + (unsigned int)rRayToDebug.x();
 	mOpenGLRenderer->EnableDebugRay(mRayTracer->GetRaysMetadata()[rayIndex]);
-	EnableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::DisableRayDebugging()
 {
 	mOpenGLRenderer->DisableDebugRay();
-	DisableDebugMode();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,10 +108,7 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 	mRayTracer->Start();
 	mOpenGLRenderer->Start();
 
-	mRenderer = mRayTracer; // starting renderer
-
-	//mCommandPrompt = std::unique_ptr<CommandPrompt>(new CommandPrompt());
-	//mCommandPrompt->Start();
+	mRenderer = mRayTracer;
 
 	mRunning = true;
 	MSG message;
@@ -155,40 +130,13 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 		{
 			try
 			{
-				if (mReloadScene && Time::Now() - mLastSceneReloadTime > 0.333f)
+				if (mLoadScene)
 				{
-					DisableDebugMode();
-
 					LoadSceneFromXML();
-
-					double start = Time::Now();
-
 					mRayTracer->SetScene(mScene);
 					mOpenGLRenderer->SetScene(mScene);
-
-					double end = Time::Now();
-
-					mReloadScene = false;
-					mLastSceneReloadTime = Time::Now();
-
-					//mCommandPrompt->ShowMessage("Elapsed time: %.5f seconds", (end - start));
+					mLoadScene = false;
 				}
-				else if (mToggleDebugMode && Time::Now() - mLastDebugModeToggleTime > 0.333f)
-				{
-					if (mDebugModeEnabled)
-					{
-						mRenderer = mOpenGLRenderer;
-					}
-					else
-					{
-						mRenderer = mRayTracer;
-					}
-					mRenderer->SetScene(mScene);
-
-					mToggleDebugMode = false;
-					mLastDebugModeToggleTime = Time::Now();
-				}
-
 				mScene->Update();
 				mRenderer->Render();
 				SwapBuffers(mDeviceContextHandle);
@@ -238,12 +186,6 @@ void SimpleRayTracerApp::Dispose()
 	mOpenGLRenderer = nullptr;
 	mRenderer = nullptr;
 	mScene = nullptr;
-
-	/*if (mCommandPrompt)
-	{
-		mCommandPrompt->Terminate();
-		mCommandPrompt = nullptr;
-	}*/
 	
 	if (mOpenGLRenderingContextHandle)
 	{
@@ -267,12 +209,19 @@ void SimpleRayTracerApp::LoadSceneFromXML()
 		exit(EXIT_FAILURE);
 	}
 	mScene->Update();
+
+	auto& camera = mScene->GetCamera();
+	mCameraPitch = degree(camera->localTransform.up().Angle(Vector3F(0, 1, 0)));
+	mCameraYaw = 180 - degree(camera->localTransform.right().Angle(Vector3F(1, 0, 0)));
+
+	// DEBUG:
+	//std::cout << "p: " << mCameraPitch << "/y: " << mCameraYaw << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraLeft()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
@@ -284,7 +233,7 @@ void SimpleRayTracerApp::MoveCameraLeft()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraRight()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
@@ -296,7 +245,7 @@ void SimpleRayTracerApp::MoveCameraRight()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraForward()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
@@ -308,7 +257,7 @@ void SimpleRayTracerApp::MoveCameraForward()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraBackward()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
@@ -320,7 +269,7 @@ void SimpleRayTracerApp::MoveCameraBackward()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraUp()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
@@ -332,13 +281,19 @@ void SimpleRayTracerApp::MoveCameraUp()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MoveCameraDown()
 {
-	if (!mDebugModeEnabled)
+	if (IsRayTracingEnabled())
 	{
 		return;
 	}
 
 	std::unique_ptr<Camera>& camera = mScene->GetCamera();
 	camera->localTransform.position -= Vector3F(0, 1, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool SimpleRayTracerApp::IsRayTracingEnabled() const
+{
+	return mRenderer == mRayTracer;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -350,11 +305,15 @@ void SimpleRayTracerApp::KeyDown(unsigned int virtualKey)
 	}
 	else if (virtualKey == VK_F5)
 	{
-		mReloadScene = true;
+		mLoadScene = true;
 	}
 	else if (virtualKey == VK_F2)
 	{
-		//mCommandPrompt->Toggle();
+		if (mRenderer == mRayTracer)
+			mRenderer = mOpenGLRenderer;
+		else
+			mRenderer = mRayTracer;
+		mRenderer->SetScene(mScene);
 	}
 	else if (virtualKey == VK_LEFT || virtualKey == 65)
 	{
@@ -387,7 +346,7 @@ void SimpleRayTracerApp::KeyUp(unsigned int virtualKey)
 {
 	if (virtualKey == VK_F5)
 	{
-		mReloadScene = false;
+		mLoadScene = false;
 	}
 }
 
@@ -424,6 +383,13 @@ void SimpleRayTracerApp::MouseMove(int x, int y)
 	}
 
 	Vector2F mousePosition = Vector2F((float)x, (float)y);
+
+	if (mLastMousePosition.x() < 0 && mLastMousePosition.y() < 0)
+	{
+		mLastMousePosition = mousePosition;
+		return;
+	}
+
 	Vector2F mouseDirection = (mousePosition - mLastMousePosition).Normalized();
 	if (mouseDirection.x() > 0)
 	{
@@ -449,45 +415,45 @@ void SimpleRayTracerApp::MouseMove(int x, int y)
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraUp()
 {
-	mCameraPitch = clamp(mCameraPitch - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	mCameraPitch = clamp(mCameraPitch + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraDown()
 {
-	mCameraPitch = clamp(mCameraPitch + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	mCameraPitch = clamp(mCameraPitch - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraLeft()
 {
-	mCameraYaw += ANGLE_INCREMENT;
+	mCameraYaw += ANGLE_INCREMENT /* NOTE: handiness sensitive */;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraRight()
 {
-	mCameraYaw -= ANGLE_INCREMENT;
+	mCameraYaw -= ANGLE_INCREMENT /* NOTE: handiness sensitive */;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::UpdateCameraRotation()
 {
-	Vector3F forward = Matrix3F::AngleAxis(mCameraPitch, Vector3F(1, 0, 0)) * 
-		Matrix3F::AngleAxis(mCameraYaw, Vector3F(0, 1, 0)) * Vector3F(0, 0, -1);
-
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	// FIXME:
+	Vector3F forward = Matrix3F::AngleAxis(mCameraPitch, Vector3F(1, 0, 0)) *
+		Matrix3F::AngleAxis(mCameraYaw, Vector3F(0, 1, 0)) * Vector3F(0, 0, 1);
+	auto& camera = mScene->GetCamera();
 	Vector3F position = camera->localTransform.position;
 	camera->localTransform.LookAt(position + forward);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::Close()
 {
-	
 }
 
 //////////////////////////////////////////////////////////////////////////

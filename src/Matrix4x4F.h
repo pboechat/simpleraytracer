@@ -70,6 +70,15 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	inline Vector3F operator * (const Vector3F& rVector) const
+	{
+		float x = mMatrix[0] * rVector.x() + mMatrix[1] * rVector.y() + mMatrix[2] * rVector.z();
+		float y = mMatrix[4] * rVector.x() + mMatrix[5] * rVector.y() + mMatrix[6] * rVector.z();
+		float z = mMatrix[8] * rVector.x() + mMatrix[9] * rVector.y() + mMatrix[10] * rVector.z();
+		return Vector3F(x, y, z);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	inline Matrix4x4F operator * (const Matrix4x4F& rOther) const
 	{
 		float m11 = mMatrix[0] * rOther.mMatrix[0] + mMatrix[1] * rOther.mMatrix[4] + mMatrix[2] * rOther.mMatrix[8] + mMatrix[3] * rOther.mMatrix[12];

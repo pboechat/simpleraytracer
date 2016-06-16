@@ -1,9 +1,9 @@
 #ifndef VECTOR3F_H_
 #define VECTOR3F_H_
 
-#include "Vector4F.h"
-
 #include <cmath>
+
+struct Vector4F;
 
 struct Vector3F
 {
@@ -53,14 +53,6 @@ struct Vector3F
 	Vector3F(float x, float y, float z)
 	{
 		mValues[0] = x; mValues[1] = y; mValues[2] = z;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	Vector3F(const Vector4F& rVector4F)
-	{
-		mValues[0] = rVector4F.x() / rVector4F.w();
-		mValues[1] = rVector4F.y() / rVector4F.w();
-		mValues[2] = rVector4F.z() / rVector4F.w();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -264,12 +256,6 @@ struct Vector3F
 	inline float Angle(const Vector3F& rOther) const
 	{
 		return acos(Dot(rOther) / (Length() * rOther.Length()));
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	inline Vector4F ToVector4F() const
-	{
-		return Vector4F(mValues[0], mValues[1], mValues[2], 1);
 	}
 
 private:

@@ -5,7 +5,6 @@
 #include "Renderer.h"
 #include "RayTracer.h"
 #include "OpenGLRenderer.h"
-#include "CommandPrompt.h"
 #include "ColorRGBA.h"
 
 #include <memory>
@@ -37,8 +36,6 @@ public:
 
 	int Run(unsigned int argc, const char** argv);
 
-	void EnableDebugMode();
-	void DisableDebugMode();
 	void EnableRayDebugging(const Vector2F& rRayToDebug);
 	void DisableRayDebugging();
 	void Close();
@@ -69,22 +66,15 @@ private:
 	std::shared_ptr<RayTracer> mRayTracer;
 	std::shared_ptr<OpenGLRenderer> mOpenGLRenderer;
 	std::shared_ptr<Renderer> mRenderer;
-	bool mDebugModeEnabled;
-	bool mReloadScene;
-	double mLastSceneReloadTime;
-	bool mToggleDebugMode;
-	double mLastDebugModeToggleTime;
-	std::unique_ptr<CommandPrompt> mCommandPrompt;
+	bool mLoadScene;
 	bool mRightMouseButtonPressed;
 	Vector2F mLastMousePosition;
 	float mCameraYaw;
 	float mCameraPitch;
-	float mCameraRoll;
 
 	SimpleRayTracerApp();
 	~SimpleRayTracerApp();
 
-	void CheckCommandPrompt();
 	void LoadSceneFromXML();
 	void Dispose();
 	WNDCLASSEX CreateWindowClass();
@@ -104,6 +94,7 @@ private:
 	void TurnCameraLeft();
 	void TurnCameraRight();
 	void UpdateCameraRotation();
+	bool IsRayTracingEnabled() const;
 
 };
 

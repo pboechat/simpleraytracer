@@ -28,17 +28,17 @@ struct Transform
 
 	inline Vector3F up()
 	{
-		return rotation * Vector3F(0, 1, 0);
+		return rotation.GetColumn(1);
 	}
 
 	inline Vector3F right()
 	{
-		return rotation * Vector3F(1, 0, 0);
+		return rotation.GetColumn(0);
 	}
 
 	inline Vector3F forward()
 	{
-		return rotation * Vector3F(0, 0, -1);
+		return rotation.GetColumn(2);
 	}
 
 	inline Matrix4F ToMatrix4x4F() const
@@ -54,10 +54,10 @@ struct Transform
 
 	void LookAt(const Vector3F& rForward, const Vector3F& rUp = Vector3F(0, 1, 0))
 	{
-		Vector3F& rZ = (position - rForward).Normalized();
-		Vector3F& rX = rUp.Cross(rZ);
-		Vector3F& rY = rZ.Cross(rX);
-
+		// NOTE: handiness sensitive
+		Vector3F rZ = (position - rForward).Normalized();
+		Vector3F rX = rUp.Cross(rZ).Normalized();
+		Vector3F rY = rZ.Cross(rX);
 		rotation = Matrix3F(rX, rY, rZ);
 	}
 
@@ -67,7 +67,6 @@ struct Transform
 		vector = scale * vector;
 		vector = rotation * vector;
 		vector += position;
-
 		return vector;
 	}
 
@@ -81,7 +80,6 @@ struct Transform
 		scale = rOther.scale * scale;
 		rotation = rOther.rotation * rotation;
 		position += rOther.position;
-
 		return *this;
 	}
 
@@ -90,7 +88,6 @@ struct Transform
 		this->scale = rOther.scale;
 		this->rotation = rOther.rotation;
 		this->position = rOther.position;
-
 		return *this;
 	}
 

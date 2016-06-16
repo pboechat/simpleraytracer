@@ -53,8 +53,8 @@ void OpenGLRenderer::Render()
 	glEnable(GL_LIGHTING);
 	glDisable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
 
 	const std::unique_ptr<Camera>& camera = mScene->GetCamera();
 
@@ -79,16 +79,12 @@ void OpenGLRenderer::Render()
 
 		if (is(light, DirectionalLight))
 		{
-			Vector4F lightDirection = camera->inverseRotation() * cast(light, DirectionalLight)->direction.ToVector4F();
-			lightDirection.w() = 0;
-
+			Vector4F lightDirection(camera->view() * cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
 		else if (is(light, PointLight))
 		{
-			Vector4F lightPosition = camera->view() * cast(light, PointLight)->position.ToVector4F();
-			lightPosition.w() = 1;
-
+			Vector4F lightPosition(camera->view() * cast(light, PointLight)->position, 1 /* NOTE: indicates point light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);

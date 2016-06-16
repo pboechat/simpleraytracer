@@ -1,6 +1,10 @@
 #ifndef SCENEOBJECT_H_
 #define SCENEOBJECT_H_
 
+#include <cmath>
+#include <vector>
+#include <memory>
+
 #include "Ray.h"
 #include "RayHit.h"
 #include "Transform.h"
@@ -10,14 +14,10 @@
 #include "Matrix3x3F.h"
 #include "Matrix4x4F.h"
 
-#include <cmath>
-#include <vector>
-#include <memory>
-
 struct SceneObject
 {
 	std::weak_ptr<SceneObject> parent;
-	std::vector<std::weak_ptr<SceneObject> > children;
+	std::vector<std::weak_ptr<SceneObject>> children;
 	Material material;
 	Transform localTransform;
 
@@ -58,9 +58,7 @@ struct SceneObject
 protected:
 	Transform mWorldTransform;
 
-	SceneObject()
-	{
-	}
+	SceneObject() = default;
 
 	virtual void OnUpdate()
 	{

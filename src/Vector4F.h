@@ -1,6 +1,8 @@
 #ifndef VECTOR4F_H_
 #define VECTOR4F_H_
 
+#include "Vector3F.h"
+
 struct Vector4F
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -61,6 +63,12 @@ struct Vector4F
 	Vector4F(float x, float y, float z, float w)
 	{
 		mValues[0] = x;	mValues[1] = y;	mValues[2] = z;	mValues[3] = w;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	Vector4F(const Vector3F& v3f, float w)
+	{
+		mValues[0] = v3f.x();	mValues[1] = v3f.y();	mValues[2] = v3f.z();	mValues[3] = w;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

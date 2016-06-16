@@ -95,12 +95,12 @@ void SceneLoader::ParseCamera(std::unique_ptr<Scene>& scene, rapidxml::xml_node<
 	float nearZ = GetFloat(xmlNode, "near");
 	float farZ = GetFloat(xmlNode, "far");
 	Vector3F rEyePosition = GetVector3F(xmlNode, "eyePosition");
-	Vector3F rForward = GetVector3F(xmlNode, "forward");
-	Vector3F rUp = GetVector3F(xmlNode, "up");
+	Vector3F rForward = GetVector3F(xmlNode, "forward").Normalized();
+	Vector3F rUp = GetVector3F(xmlNode, "up").Normalized();
 
 	std::unique_ptr<Camera> camera(new Camera(fov, nearZ, farZ));
 	camera->localTransform.position = rEyePosition;
-	camera->localTransform.LookAt(rForward, rUp);
+	camera->localTransform.LookAt(rEyePosition + rForward, rUp);
 
 	scene->SetCamera(camera);
 }
@@ -116,15 +116,13 @@ void SceneLoader::ParseLight(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>
 
 	if (type == "point")
 	{
-		Vector3F& rPosition = GetVector3F(xmlNode, "position");
+		Vector3F rPosition = GetVector3F(xmlNode, "position");
 		float attenuation = GetFloat(xmlNode, "attenuation");
-
 		scene->AddLight(std::unique_ptr<Light>(new PointLight(rDiffuseColor, rSpecularColor, intensity, rPosition, attenuation)));
 	}
 	else if (type == "directional")
 	{
-		Vector3F& rDirection = GetVector3F(xmlNode, "direction");
-
+		Vector3F rDirection = GetVector3F(xmlNode, "direction").Normalized();
 		scene->AddLight(std::unique_ptr<Light>(new DirectionalLight(rDiffuseColor, rSpecularColor, intensity, rDirection)));
 	}
 }
