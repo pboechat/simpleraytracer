@@ -69,7 +69,7 @@ public:
 	virtual void Update(Transform transform)
 	{
 		mCurrentCenter = transform * center;
-		mCurrentRadius = radius * max(transform.scale[0][0], max(transform.scale[1][1], transform.scale[2][2]));
+		mCurrentRadius = radius * srt_max(transform.scale[0][0], srt_max(transform.scale[1][1], transform.scale[2][2]));
 	}
 
 private:

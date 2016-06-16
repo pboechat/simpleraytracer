@@ -1,13 +1,13 @@
 #ifndef MODEL_H_
 #define MODEL_H_
 
-#include "Scene.h"
-#include "Mesh.h"
-#include "TinyObjLoader.h"
-
 #include <vector>
 #include <string>
 #include <memory>
+
+#include "Scene.h"
+#include "Mesh.h"
+#include "TinyObjLoader.h"
 
 using namespace TinyObjLoader;
 

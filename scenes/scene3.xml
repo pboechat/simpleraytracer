@@ -1,7 +1,7 @@
 <Scene>
     <Camera fov="60" near="0.3" far="1000" eyePosition="0, 0, 0" forward="0, 0, 1" up="0, 1, 0">
     </Camera>
-    <Light type="directional" diffuseLight="1, 1, 1, 1" intensity="1" direction="-0.3213938, -0.7660446, 0.5566703">
+    <Light type="directional" diffuseLight="1, 1, 1, 1" intensity="1" direction="0, -0.707, 0.707">
     </Light>
     <Mesh id="1" parentId="-1" vertices="scenes\Rooster.vertices" normals="scenes\Rooster.normals" uvs="scenes\Rooster.uvs" indices="scenes\Rooster.indices">
         <Transform scale="0.330, 0, 0, 0, 0.275, 0, 0, 0, 2" rotation="1, 0, 0, 0, 0, 1, 0, -1, 0" position="0, 0, 4">

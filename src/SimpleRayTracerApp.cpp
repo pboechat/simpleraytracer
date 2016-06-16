@@ -1,3 +1,8 @@
+#include <windowsx.h>
+#include <string>
+#include <stdexcept>
+
+#include "Common.h"
 #include "SimpleRayTracerApp.h"
 #include "Vector3F.h"
 #include "ColorRGBA.h"
@@ -7,12 +12,6 @@
 #include "PointLight.h"
 #include "TextureLoader.h"
 #include "SceneLoader.h"
-
-#include <windowsx.h>
-#include <string>
-#include <exception>
-
-#include "Common.h"
 
 #define win32Assert(resultHandle, errorMessage) \
 	if (resultHandle == 0) \
@@ -34,8 +33,8 @@ const unsigned int SimpleRayTracerApp::HAS_ALPHA = 0;
 const PIXELFORMATDESCRIPTOR SimpleRayTracerApp::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
 const ColorRGBA SimpleRayTracerApp::CLEAR_COLOR(0, 0, 0, 1);
 const ColorRGBA SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
-const float SimpleRayTracerApp::ANGLE_INCREMENT = 3;
-const float SimpleRayTracerApp::CAMERA_PITCH_LIMIT = 45;
+const float SimpleRayTracerApp::ANGLE_INCREMENT = 0.05f;
+const float SimpleRayTracerApp::CAMERA_PITCH_LIMIT = 1.0472f; // 60 deg.
 
 //////////////////////////////////////////////////////////////////////////
 SimpleRayTracerApp::SimpleRayTracerApp() :
@@ -53,8 +52,8 @@ SimpleRayTracerApp::SimpleRayTracerApp() :
 	mLoadScene(true),
 	mRightMouseButtonPressed(false),
 	mLastMousePosition(-1, -1),
-	mCameraYaw(0),
-	mCameraPitch(0)
+	mCameraPhi(0),
+	mCameraTheta(0)
 {
 	s_mpInstance = this;
 }
@@ -141,7 +140,7 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 				mRenderer->Render();
 				SwapBuffers(mDeviceContextHandle);
 			}
-			catch (std::exception& rException)
+			catch (std::runtime_error& rException)
 			{
 				MessageBox(mWindowHandle, rException.what(), WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
 				DestroyWindow(mWindowHandle);
@@ -202,7 +201,7 @@ void SimpleRayTracerApp::LoadSceneFromXML()
 	{
 		mScene = SceneLoader::LoadFromXML(mpSceneFileName);
 	}
-	catch (std::exception& rException)
+	catch (std::runtime_error& rException)
 	{
 		MessageBox(mWindowHandle, rException.what(), WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		Dispose();
@@ -211,11 +210,18 @@ void SimpleRayTracerApp::LoadSceneFromXML()
 	mScene->Update();
 
 	auto& camera = mScene->GetCamera();
-	mCameraPitch = degree(camera->localTransform.up().Angle(Vector3F(0, 1, 0)));
-	mCameraYaw = 180 - degree(camera->localTransform.right().Angle(Vector3F(1, 0, 0)));
-
-	// DEBUG:
-	//std::cout << "p: " << mCameraPitch << "/y: " << mCameraYaw << std::endl;
+	float zAngle = camera->localTransform.forward().Angle(Vector3F(0, 0, -1));
+	if (zAngle < srt_halfPI)
+	{
+		mCameraPhi = camera->localTransform.up().Angle(Vector3F(0, 1, 0)) - srt_halfPI;
+		mCameraTheta = srt_PI - camera->localTransform.right().Angle(Vector3F(1, 0, 0));
+	}
+	else
+	{
+		mCameraPhi = camera->localTransform.up().Angle(Vector3F(0, 1, 0)) + srt_halfPI;
+		mCameraTheta = camera->localTransform.right().Angle(Vector3F(1, 0, 0));
+	}
+	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -226,7 +232,7 @@ void SimpleRayTracerApp::MoveCameraLeft()
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	auto& camera = mScene->GetCamera();
 	camera->localTransform.position -= camera->localTransform.right();
 }
 
@@ -238,7 +244,7 @@ void SimpleRayTracerApp::MoveCameraRight()
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	auto& camera = mScene->GetCamera();
 	camera->localTransform.position += camera->localTransform.right();
 }
 
@@ -250,8 +256,8 @@ void SimpleRayTracerApp::MoveCameraForward()
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
-	camera->localTransform.position += camera->localTransform.forward();
+	auto& camera = mScene->GetCamera();
+	camera->localTransform.position -= camera->localTransform.forward();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,8 +268,8 @@ void SimpleRayTracerApp::MoveCameraBackward()
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
-	camera->localTransform.position -= camera->localTransform.forward();
+	auto& camera = mScene->GetCamera();
+	camera->localTransform.position += camera->localTransform.forward();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -415,40 +421,48 @@ void SimpleRayTracerApp::MouseMove(int x, int y)
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraUp()
 {
-	mCameraPitch = clamp(mCameraPitch + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	mCameraTheta = srt_clamp(mCameraTheta + ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraDown()
 {
-	mCameraPitch = clamp(mCameraPitch - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+	mCameraTheta = srt_clamp(mCameraTheta - ANGLE_INCREMENT, -CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraLeft()
 {
-	mCameraYaw += ANGLE_INCREMENT /* NOTE: handiness sensitive */;
+	mCameraPhi -= ANGLE_INCREMENT /* NOTE: handiness sensitive */;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::TurnCameraRight()
 {
-	mCameraYaw -= ANGLE_INCREMENT /* NOTE: handiness sensitive */;
+	mCameraPhi += ANGLE_INCREMENT /* NOTE: handiness sensitive */;
 	UpdateCameraRotation();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::UpdateCameraRotation()
 {
-	// FIXME:
-	Vector3F forward = Matrix3F::AngleAxis(mCameraPitch, Vector3F(1, 0, 0)) *
-		Matrix3F::AngleAxis(mCameraYaw, Vector3F(0, 1, 0)) * Vector3F(0, 0, 1);
+	// DEBUG:
+	//std::cout << "phi: " << srt_degree(mCameraPhi) << " / theta: " << srt_degree(mCameraTheta) << std::endl;
+
+	float cp = cos(mCameraPhi);
+	float sp = sin(mCameraPhi);
+	float ct = cos(mCameraTheta);
+	float st = sin(mCameraTheta);
+
+	Vector3F w(ct * cp, st, ct * sp);
+	Vector3F v(-st * cp, ct, -st * sp);
+	Vector3F u = v.Cross(w);
+
 	auto& camera = mScene->GetCamera();
-	Vector3F position = camera->localTransform.position;
-	camera->localTransform.LookAt(position + forward);
+	camera->localTransform.rotation = Matrix3x3F(u, v, w);
 }
 
 //////////////////////////////////////////////////////////////////////////

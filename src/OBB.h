@@ -1,18 +1,10 @@
 #ifndef OBB_H_
 #define OBB_H_
 
+#include "Common.h"
 #include "BoundingVolume.h"
 #include "Matrix3x3F.h"
 #include "EigenSolver.h"
-
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#define swap(a, b) \
-		{ \
-		float tmp = (a); \
-		(a) = (b); \
-		(b) = tmp; \
-		}
 
 #define MAX_VALUE 100000.0f
 
@@ -62,13 +54,13 @@ struct OBB : public BoundingVolume
 		{
 			Vector3F vector(axis[0].Dot(rPoints[i]), axis[1].Dot(rPoints[i]), axis[2].Dot(rPoints[i]));
 
-			minValues.x() = min(vector.x(), minValues.x());
-			minValues.y() = min(vector.y(), minValues.y());
-			minValues.z() = min(vector.z(), minValues.z());
+			minValues.x() = srt_min(vector.x(), minValues.x());
+			minValues.y() = srt_min(vector.y(), minValues.y());
+			minValues.z() = srt_min(vector.z(), minValues.z());
 			
-			maxValues.x() = max(vector.x(), maxValues.x());
-			maxValues.y() = max(vector.y(), maxValues.y());
-			maxValues.z() = max(vector.z(), maxValues.z());
+			maxValues.x() = srt_max(vector.x(), maxValues.x());
+			maxValues.y() = srt_max(vector.y(), maxValues.y());
+			maxValues.z() = srt_max(vector.z(), maxValues.z());
 		}
 
 		center = Matrix3F(axis[0], axis[1], axis[2]) * ((maxValues + minValues) / 2.0f);
@@ -121,7 +113,7 @@ private:
 
 		float tmin = (_min - start) / dir;
 		float tmax = (_max - start) / dir;
-		if (tmin > tmax) swap(tmin, tmax);
+		if (tmin > tmax) srt_swap(tmin, tmax);
 
 		if (tmax < t0 || tmin > t1)
 			return false;

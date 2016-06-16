@@ -1,15 +1,26 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#define radian(x) x * 0.017453293f
+#define srt_radian(x) x * 0.017453293f
+#define srt_degree(x) x * 57.295779513f
 
-#define cast(x, T) dynamic_cast<T*>(x.get())
-#define is(x, T) dynamic_cast<T*>(x.get()) != 0
+#define srt_PI 3.14159265359f
+#define srt_halfPI 1.57079632679f
 
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define srt_cast(x, T) dynamic_cast<T*>(x.get())
+#define srt_is(x, T) dynamic_cast<T*>(x.get()) != 0
 
-#define clamp(v, vmin, vmax) ((v) < (vmin)) ? (vmin) : (((v) > (vmax)) ? (vmax) : (v))
+#define srt_max(a, b) (((a) > (b)) ? (a) : (b))
+#define srt_min(a, b) (((a) < (b)) ? (a) : (b))
+
+#define srt_clamp(v, vmin, vmax) ((v) < (vmin)) ? (vmin) : (((v) > (vmax)) ? (vmax) : (v))
+
+#define srt_swap(a, b) \
+		{ \
+			float tmp = (a); \
+			(a) = (b); \
+			(b) = tmp; \
+		}
 
 #if defined(__gl_h_) && defined(__glu_h__) && defined(_EXCEPTION_)
 

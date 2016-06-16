@@ -1,11 +1,11 @@
 #ifndef MATRIX3x3F_H_
 #define MATRIX3x3F_H_
 
+#include <cmath>
+
+#include "Common.h"
 #include "Vector3F.h"
 #include "Matrix4x4F.h"
-
-#define radian(x) x * 0.017453293f
-#define degree(x) x * 57.295779513f
 
 struct Matrix3x3F
 {
@@ -202,8 +202,8 @@ struct Matrix3x3F
 	//////////////////////////////////////////////////////////////////////////
 	static Matrix3x3F AngleAxis(float angle /* degrees */, const Vector3F& rAxis)
 	{
-		float cosT = cos(radian(angle));
-		float sinT = sin(radian(angle));
+		float cosT = cos(srt_radian(angle));
+		float sinT = sin(srt_radian(angle));
 		float invCosT = 1 - cosT;
 
 		float m11 = cosT + invCosT * (rAxis.x() * rAxis.x());

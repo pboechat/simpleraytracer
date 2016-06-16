@@ -1,6 +1,8 @@
 #ifndef OPENGLRENDERER_H_
 #define OPENGLRENDERER_H_
 
+#include <map>
+
 #include "Renderer.h"
 #include "SceneObject.h"
 #include "Sphere.h"
@@ -8,8 +10,6 @@
 #include "ColorRGBA.h"
 #include "Matrix4x4F.h"
 #include "RayMetadata.h"
-
-#include <map>
 
 class OpenGLRenderer : public Renderer
 {

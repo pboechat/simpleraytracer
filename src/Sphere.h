@@ -1,11 +1,8 @@
 #ifndef SPHERE_H_
 #define SPHERE_H_
 
+#include "Common.h"
 #include "SceneObject.h"
-
-#include <cmath>
-
-#define PI 3.14159265359f
 
 struct Sphere : public SceneObject
 {
@@ -53,7 +50,7 @@ struct Sphere : public SceneObject
 
 		// Spherical Mapping with Normals:
 		// http://www.mvps.org/directx/articles/spheremap.htm
-		rHit.uv = Vector2F(asin(rHit.normal.x()) / PI + 0.5f, asin(rHit.normal.y()) / PI + 0.5f);
+		rHit.uv = Vector2F(asin(rHit.normal.x()) / srt_PI + 0.5f, asin(rHit.normal.y()) / srt_PI + 0.5f);
 
 		return true;
 	}

@@ -1,9 +1,9 @@
 #ifndef TIME_H_
 #define TIME_H_
 
-#include <Windows.h>
+#include <stdexcept>
 
-#include <exception>
+#include <Windows.h>
 
 class Time
 {
@@ -17,7 +17,7 @@ public:
 		{
 			if (!QueryPerformanceFrequency(&time))
 			{
-				throw std::exception("Cannot query performance counter frequency");
+				throw std::runtime_error("Cannot query performance counter frequency");
 			}
 
 			frequency = (double) time.QuadPart;
@@ -25,7 +25,7 @@ public:
 
 		if(!QueryPerformanceCounter(&time))
 		{
-			throw std::exception("Cannot query performance counter");
+			throw std::runtime_error("Cannot query performance counter");
 		}
 
 		return (double)time.QuadPart / frequency;

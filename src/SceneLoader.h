@@ -1,6 +1,10 @@
 #ifndef SCENELOADER_H_
 #define SCENELOADER_H_
 
+#include <string>
+#include <map>
+#include <memory>
+
 #include "Scene.h"
 #include "RapidXML.h"
 #include "Camera.h"
@@ -10,10 +14,6 @@
 #include "Vector3F.h"
 #include "Matrix3x3F.h"
 #include "SceneObject.h"
-
-#include <string>
-#include <map>
-#include <memory>
 
 class SceneLoader
 {

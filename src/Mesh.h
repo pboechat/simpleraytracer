@@ -1,13 +1,13 @@
 #ifndef MESH_H_
 #define MESH_H_
 
-#include "SceneObject.h"
-#include "Vector2F.h"
-#include "BoundingVolume.h"
-
 #include <vector>
 #include <string>
 #include <memory>
+
+#include "SceneObject.h"
+#include "Vector2F.h"
+#include "BoundingVolume.h"
 
 #define EPSILON 0.000001f
 

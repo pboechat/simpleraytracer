@@ -1,3 +1,12 @@
+#include <windows.h>
+#include <GL/GL.h>
+#include <GL/GLU.h>
+#include "glext.h"
+#include <cmath>
+#include <stdexcept>
+#include <iostream>
+
+#include "Common.h"
 #include "RayTracer.h"
 #include "Camera.h"
 #include "RayHit.h"
@@ -11,16 +20,6 @@
 #include "Matrix4x4F.h"
 #include "SimpleRayTracerApp.h"
 #include "Time.h"
-
-#include <windows.h>
-#include <GL/GL.h>
-#include <GL/GLU.h>
-#include "glext.h"
-#include <cmath>
-#include <stdexcept>
-#include <iostream>
-
-#include "Common.h"
 
 const unsigned int RayTracer::DEPTH_BUFFER_SIZE = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
 const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * SimpleRayTracerApp::BYTES_PER_PIXEL;
@@ -337,13 +336,13 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 
 		float distanceToLight = -1;
 		Vector3F lightDirection;
-		if (is(light, DirectionalLight))
+		if (srt_is(light, DirectionalLight))
 		{
-			lightDirection = cast(light, DirectionalLight)->direction;
+			lightDirection = srt_cast(light, DirectionalLight)->direction;
 		}
-		else if (is(light, PointLight))
+		else if (srt_is(light, PointLight))
 		{
-			Vector3F lightPosition = cast(light, PointLight)->position;
+			Vector3F lightPosition = srt_cast(light, PointLight)->position;
 			lightDirection = (lightPosition - rHit.point).Normalized();
 			distanceToLight = lightPosition.Distance(rHit.point);
 		}
@@ -366,9 +365,9 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 
 		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *light, lightDirection, viewerDirection, rNormal);
 
-		if (is(light, PointLight))
+		if (srt_is(light, PointLight))
 		{
-			float distanceAttenuation = 1.0f / max(cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
+			float distanceAttenuation = 1.0f / srt_max(srt_cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
 			colorContribution *= distanceAttenuation;
 		}
 

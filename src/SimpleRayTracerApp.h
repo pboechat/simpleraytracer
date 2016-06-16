@@ -1,17 +1,17 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-#include "Scene.h"
-#include "Renderer.h"
-#include "RayTracer.h"
-#include "OpenGLRenderer.h"
-#include "ColorRGBA.h"
-
 #include <memory>
 #include <windows.h>
 #include <GL/GL.h>
 #include <GL/GLU.h>
 #include "glext.h"
+
+#include "Scene.h"
+#include "Renderer.h"
+#include "RayTracer.h"
+#include "OpenGLRenderer.h"
+#include "ColorRGBA.h"
 
 //////////////////////////////////////////////////////////////////////////
 int main(unsigned int argc, const char** argv);
@@ -69,8 +69,8 @@ private:
 	bool mLoadScene;
 	bool mRightMouseButtonPressed;
 	Vector2F mLastMousePosition;
-	float mCameraYaw;
-	float mCameraPitch;
+	float mCameraPhi;
+	float mCameraTheta;
 
 	SimpleRayTracerApp();
 	~SimpleRayTracerApp();

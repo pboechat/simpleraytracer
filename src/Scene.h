@@ -1,12 +1,12 @@
 #ifndef SCENE_H_
 #define SCENE_H_
 
+#include <vector>
+#include <memory>
+
 #include "Camera.h"
 #include "Light.h"
 #include "SceneObject.h"
-
-#include <vector>
-#include <memory>
 
 class Scene
 {

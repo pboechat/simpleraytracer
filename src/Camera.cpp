@@ -1,10 +1,8 @@
 #include <cmath>
 
+#include "Common.h"
 #include "Camera.h"
 #include "SimpleRayTracerApp.h"
-
-// NOTE: needs to be included after all other includes!
-#include "Common.h"
 
 //////////////////////////////////////////////////////////////////////////
 Camera::Camera(float fov, float _near, float _far) :
@@ -12,7 +10,7 @@ Camera::Camera(float fov, float _near, float _far) :
 	mNear(_near),
 	mFar(_far)
 {
-	float fovTan = tan(radian(mFov / 2.0f));
+	float fovTan = tan(srt_radian(mFov / 2.0f));
 	mAspectRatio = SimpleRayTracerApp::SCREEN_WIDTH / (float)SimpleRayTracerApp::SCREEN_HEIGHT;
 	mProjectionPlaneHeight = 2.0f * mNear * fovTan;
 	mProjectionPlaneWidth = mAspectRatio * mProjectionPlaneHeight;

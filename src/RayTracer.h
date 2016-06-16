@@ -1,14 +1,14 @@
 #ifndef RAYTRACER_H_
 #define RAYTRACER_H_
 
+#include <vector>
+
 #include "Renderer.h"
 #include "Scene.h"
 #include "Ray.h"
 #include "SceneObject.h"
 #include "ColorRGBA.h"
 #include "RayMetadata.h"
-
-#include <vector>
 
 class RayTracer : public Renderer
 {

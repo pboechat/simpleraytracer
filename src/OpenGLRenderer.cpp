@@ -1,3 +1,12 @@
+#include <cmath>
+#include <stdexcept>
+#include <vector>
+#include <windows.h>
+#include <GL/GL.h>
+#include <GL/GLU.h>
+#include "glext.h"
+
+#include "Common.h"
 #include "OpenGLRenderer.h"
 #include "Camera.h"
 #include "Vector2F.h"
@@ -8,16 +17,6 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SimpleRayTracerApp.h"
-
-#include <windows.h>
-#include <GL/GL.h>
-#include <GL/GLU.h>
-#include "glext.h"
-#include <cmath>
-#include <exception>
-#include <vector>
-
-#include "Common.h"
 
 #define SPHERE_MESH_SLICES 100
 
@@ -77,14 +76,14 @@ void OpenGLRenderer::Render()
 		glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, &(light->diffuseColor * light->intensity)[0]);
 		glLightfv(GL_LIGHT0 + i, GL_SPECULAR, &(light->specularColor * light->intensity)[0]);
 
-		if (is(light, DirectionalLight))
+		if (srt_is(light, DirectionalLight))
 		{
-			Vector4F lightDirection(camera->view() * cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
+			Vector4F lightDirection(camera->inverseRotation() * -srt_cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
-		else if (is(light, PointLight))
+		else if (srt_is(light, PointLight))
 		{
-			Vector4F lightPosition(camera->view() * cast(light, PointLight)->position, 1 /* NOTE: indicates point light for OpenGL */);
+			Vector4F lightPosition(camera->view() * srt_cast(light, PointLight)->position, 1 /* NOTE: indicates point light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);
@@ -98,13 +97,13 @@ void OpenGLRenderer::Render()
 	{
 		if (auto pSceneObject = mScene->GetSceneObject(i).lock())
 		{
-			if (is(pSceneObject, Mesh))
+			if (srt_is(pSceneObject, Mesh))
 			{
-				RenderMesh(cast(pSceneObject, Mesh));
+				RenderMesh(srt_cast(pSceneObject, Mesh));
 			}
-			else if (is(pSceneObject, Sphere))
+			else if (srt_is(pSceneObject, Sphere))
 			{
-				RenderSphere(cast(pSceneObject, Sphere));
+				RenderSphere(srt_cast(pSceneObject, Sphere));
 			}
 		}
 	}
@@ -203,8 +202,8 @@ Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
 {
 	Mesh* pMesh = new Mesh();
 
-	float uStep = 2 * PI / (SPHERE_MESH_SLICES - 1);
-	float vStep = PI / (SPHERE_MESH_SLICES - 1);
+	float uStep = 2 * srt_PI / (SPHERE_MESH_SLICES - 1);
+	float vStep = srt_PI / (SPHERE_MESH_SLICES - 1);
 	float u = 0.0f;
 	for (unsigned int i = 0; i < SPHERE_MESH_SLICES; i++)
 	{
@@ -239,7 +238,7 @@ Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
 			pMesh->vertices.push_back(Vector3F(x, y, z));
 			pMesh->normals.push_back(normal);
 
-			pMesh->uvs.push_back(Vector2F(asin(normal.x()) / PI + 0.5f, asin(normal.y()) / PI + 0.5f));
+			pMesh->uvs.push_back(Vector2F(asin(normal.x()) / srt_PI + 0.5f, asin(normal.y()) / srt_PI + 0.5f));
 
 			v += vStep;
 		}
