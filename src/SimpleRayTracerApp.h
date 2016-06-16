@@ -68,6 +68,8 @@ private:
 	std::shared_ptr<Renderer> mRenderer;
 	bool mLoadScene;
 	bool mRightMouseButtonPressed;
+	bool mKeys[0xFF];
+	bool mPressedKeys[0xFF];
 	Vector2F mLastMousePosition;
 	float mCameraPhi;
 	float mCameraTheta;
@@ -95,6 +97,7 @@ private:
 	void TurnCameraRight();
 	void UpdateCameraRotation();
 	bool IsRayTracingEnabled() const;
+	void ProcessKeys(double deltaTime);
 
 };
 

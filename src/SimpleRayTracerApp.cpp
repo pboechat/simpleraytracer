@@ -12,8 +12,9 @@
 #include "PointLight.h"
 #include "TextureLoader.h"
 #include "SceneLoader.h"
+#include "Time.h"
 
-#define win32Assert(resultHandle, errorMessage) \
+#define srt_win32Assert(resultHandle, errorMessage) \
 	if (resultHandle == 0) \
 	{ \
 		MessageBox(NULL, #errorMessage, WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION); \
@@ -24,8 +25,8 @@
 SimpleRayTracerApp* SimpleRayTracerApp::s_mpInstance = 0;
 const char* SimpleRayTracerApp::WINDOW_TITLE = "simpleraytracer";
 const char* SimpleRayTracerApp::WINDOW_CLASS_NAME = "simpleraytracerWindowClass";
-const unsigned int SimpleRayTracerApp::SCREEN_WIDTH = 800;
-const unsigned int SimpleRayTracerApp::SCREEN_HEIGHT = 600;
+const unsigned int SimpleRayTracerApp::SCREEN_WIDTH = 1024;
+const unsigned int SimpleRayTracerApp::SCREEN_HEIGHT = 768;
 const unsigned int SimpleRayTracerApp::BYTES_PER_PIXEL = 4;
 const unsigned int SimpleRayTracerApp::COLOR_BUFFER_BITS = 32;
 const unsigned int SimpleRayTracerApp::DEPTH_BUFFER_BITS = 32;
@@ -55,6 +56,8 @@ SimpleRayTracerApp::SimpleRayTracerApp() :
 	mCameraPhi(0),
 	mCameraTheta(0)
 {
+	memset(mKeys, 0, sizeof(bool) * 0xFF);
+	memset(mPressedKeys, 0, sizeof(bool) * 0xFF);
 	s_mpInstance = this;
 }
 
@@ -88,13 +91,13 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 
 	mApplicationHandle = GetModuleHandle(0);
 
-	win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
-	win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, mApplicationHandle, NULL)), "CreateWindow failed");
-	win32Assert((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
-	win32Assert((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
-	win32Assert(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
-	win32Assert((mOpenGLRenderingContextHandle = wglCreateContext(mDeviceContextHandle)), "wglCreateContext() failed");
-	win32Assert(wglMakeCurrent(mDeviceContextHandle, mOpenGLRenderingContextHandle), "wglMakeCurrent() failed");
+	srt_win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
+	srt_win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, mApplicationHandle, NULL)), "CreateWindow failed");
+	srt_win32Assert((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
+	srt_win32Assert((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
+	srt_win32Assert(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
+	srt_win32Assert((mOpenGLRenderingContextHandle = wglCreateContext(mDeviceContextHandle)), "wglCreateContext() failed");
+	srt_win32Assert(wglMakeCurrent(mDeviceContextHandle, mOpenGLRenderingContextHandle), "wglMakeCurrent() failed");
 	ShowWindow(mWindowHandle, SW_SHOW);
 	SetForegroundWindow(mWindowHandle);
 	SetFocus(mWindowHandle);
@@ -129,6 +132,7 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 		{
 			try
 			{
+				auto start = Time::Now();
 				if (mLoadScene)
 				{
 					LoadSceneFromXML();
@@ -138,6 +142,9 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 				}
 				mScene->Update();
 				mRenderer->Render();
+				auto end = Time::Now();
+				ProcessKeys(end - start);
+				memset(mPressedKeys, 0, sizeof(bool) * 0xFF);
 				SwapBuffers(mDeviceContextHandle);
 			}
 			catch (std::runtime_error& rException)
@@ -150,7 +157,7 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 
 	Dispose();
 
-	win32Assert(UnregisterClass(WINDOW_CLASS_NAME, mApplicationHandle), "UnregisterClass() failed");
+	srt_win32Assert(UnregisterClass(WINDOW_CLASS_NAME, mApplicationHandle), "UnregisterClass() failed");
 
 	mDeviceContextHandle = 0;
 	mWindowHandle = 0;
@@ -188,8 +195,8 @@ void SimpleRayTracerApp::Dispose()
 	
 	if (mOpenGLRenderingContextHandle)
 	{
-		win32Assert(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
-		win32Assert(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
+		srt_win32Assert(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
+		srt_win32Assert(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
 		mOpenGLRenderingContextHandle = 0;
 	}
 }
@@ -210,17 +217,9 @@ void SimpleRayTracerApp::LoadSceneFromXML()
 	mScene->Update();
 
 	auto& camera = mScene->GetCamera();
-	float zAngle = camera->localTransform.forward().Angle(Vector3F(0, 0, -1));
-	if (zAngle < srt_halfPI)
-	{
-		mCameraPhi = camera->localTransform.up().Angle(Vector3F(0, 1, 0)) - srt_halfPI;
-		mCameraTheta = srt_PI - camera->localTransform.right().Angle(Vector3F(1, 0, 0));
-	}
-	else
-	{
-		mCameraPhi = camera->localTransform.up().Angle(Vector3F(0, 1, 0)) + srt_halfPI;
-		mCameraTheta = camera->localTransform.right().Angle(Vector3F(1, 0, 0));
-	}
+	auto forward = camera->localTransform.forward();
+	mCameraPhi = srt_halfPI - atan2(forward.x(), forward.z());
+	mCameraTheta = srt_halfPI - atan2(hypot(forward.x(), forward.z()), forward.y());
 	UpdateCameraRotation();
 }
 
@@ -302,18 +301,17 @@ bool SimpleRayTracerApp::IsRayTracingEnabled() const
 	return mRenderer == mRayTracer;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::KeyDown(unsigned int virtualKey)
+void SimpleRayTracerApp::ProcessKeys(double deltaTime)
 {
-	if (virtualKey == VK_ESCAPE)
+	if (mPressedKeys[VK_ESCAPE])
 	{
 		DestroyWindow(mWindowHandle);
 	}
-	else if (virtualKey == VK_F5)
+	else if (mPressedKeys[VK_F5])
 	{
 		mLoadScene = true;
 	}
-	else if (virtualKey == VK_F2)
+	else if (mPressedKeys[VK_F2])
 	{
 		if (mRenderer == mRayTracer)
 			mRenderer = mOpenGLRenderer;
@@ -321,39 +319,43 @@ void SimpleRayTracerApp::KeyDown(unsigned int virtualKey)
 			mRenderer = mRayTracer;
 		mRenderer->SetScene(mScene);
 	}
-	else if (virtualKey == VK_LEFT || virtualKey == 65)
+	else if (mKeys[VK_LEFT] || mKeys[65])
 	{
 		MoveCameraLeft();
 	}
-	else if (virtualKey == VK_RIGHT || virtualKey == 68)
+	else if (mKeys[VK_RIGHT] || mKeys[68])
 	{
 		MoveCameraRight();
 	}
-	else if (virtualKey == VK_UP || virtualKey == 87)
+	else if (mKeys[VK_UP] || mKeys[87])
 	{
 		MoveCameraForward();
 	}
-	else if (virtualKey == VK_DOWN || virtualKey == 83)
+	else if (mKeys[VK_DOWN] || mKeys[83])
 	{
 		MoveCameraBackward();
 	}
-	else if (virtualKey == 81 || virtualKey == 33)
+	else if (mKeys[81] || mKeys[33])
 	{
 		MoveCameraUp();
 	}
-	else if (virtualKey == 69 || virtualKey == 34)
+	else if (mKeys[69] || mKeys[34])
 	{
 		MoveCameraDown();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::KeyDown(unsigned int virtualKey)
+{
+	mKeys[virtualKey] = true;
+	mPressedKeys[virtualKey] = true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::KeyUp(unsigned int virtualKey)
 {
-	if (virtualKey == VK_F5)
-	{
-		mLoadScene = false;
-	}
+	mKeys[virtualKey] = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -378,6 +380,11 @@ void SimpleRayTracerApp::MouseButtonUp(unsigned int button, int x, int y)
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::MouseMove(int x, int y)
 {
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
 	if (!mRightMouseButtonPressed)
 	{
 		return;
@@ -451,16 +458,13 @@ void SimpleRayTracerApp::UpdateCameraRotation()
 {
 	// DEBUG:
 	//std::cout << "phi: " << srt_degree(mCameraPhi) << " / theta: " << srt_degree(mCameraTheta) << std::endl;
-
-	float cp = cos(mCameraPhi);
-	float sp = sin(mCameraPhi);
-	float ct = cos(mCameraTheta);
-	float st = sin(mCameraTheta);
-
-	Vector3F w(ct * cp, st, ct * sp);
-	Vector3F v(-st * cp, ct, -st * sp);
+	float cosPhi = cos(mCameraPhi);
+	float sinPhi = sin(mCameraPhi);
+	float cosTheta = cos(mCameraTheta);
+	float sinTheta = sin(mCameraTheta);
+	Vector3F w(cosTheta * cosPhi, sinTheta, cosTheta * sinPhi);
+	Vector3F v(-sinTheta * cosPhi, cosTheta, -sinTheta * sinPhi);
 	Vector3F u = v.Cross(w);
-
 	auto& camera = mScene->GetCamera();
 	camera->localTransform.rotation = Matrix3x3F(u, v, w);
 }

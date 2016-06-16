@@ -52,8 +52,8 @@ void OpenGLRenderer::Render()
 	glEnable(GL_LIGHTING);
 	glDisable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
-	glDisable(GL_CULL_FACE);
-	//glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	const std::unique_ptr<Camera>& camera = mScene->GetCamera();
 
@@ -83,7 +83,7 @@ void OpenGLRenderer::Render()
 		}
 		else if (srt_is(light, PointLight))
 		{
-			Vector4F lightPosition(camera->view() * srt_cast(light, PointLight)->position, 1 /* NOTE: indicates point light for OpenGL */);
+			Vector4F lightPosition((camera->view() * Vector4F(srt_cast(light, PointLight)->position, 1)).xyz(), 1 /* NOTE: indicates point light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);

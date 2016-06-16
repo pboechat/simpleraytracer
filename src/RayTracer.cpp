@@ -5,6 +5,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 
 #include "Common.h"
 #include "RayTracer.h"
@@ -26,19 +27,19 @@ const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * SimpleRayT
 const unsigned int RayTracer::RAYS_METADATA_SIZE = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
 const unsigned int RayTracer::MAX_ITERATIONS = 5;
 
-#define clampColor(v, vmin, vmax) \
+#define srt_clampColor(v, vmin, vmax) \
 	(v).r() = (((v).r() < (vmin)) ? (vmin) : (((v).r() > (vmax)) ? (vmax) : (v).r())); \
 	(v).g() = (((v).g() < (vmin)) ? (vmin) : (((v).g() > (vmax)) ? (vmax) : (v).g())); \
 	(v).b() = (((v).b() < (vmin)) ? (vmin) : (((v).b() > (vmax)) ? (vmax) : (v).b())); \
 	(v).a() = (((v).a() < (vmin)) ? (vmin) : (((v).a() > (vmax)) ? (vmax) : (v).a()))
 
-#define setColor(colorBuffer, i, c) \
+#define srt_setColor(colorBuffer, i, c) \
 	(colorBuffer)[(i)] = static_cast<unsigned char>((c).r() * 255.0); \
 	(colorBuffer)[(i) + 1] = static_cast<unsigned char>((c).g() * 255.0); \
 	(colorBuffer)[(i) + 2] = static_cast<unsigned char>((c).b() * 255.0); \
 	(colorBuffer)[(i) + 3] = 255
 
-#define getColor(colorBuffer, i, c) \
+#define srt_getColor(colorBuffer, i, c) \
 	(c).r() = (colorBuffer)[(i)] / 255.0f; \
 	(c).g() = (colorBuffer)[(i) + 1] / 255.0f; \
 	(c).b() = (colorBuffer)[(i) + 2] / 255.0f; \
@@ -53,14 +54,14 @@ PFNGLDELETEBUFFERSARBPROC pglDeleteBuffersARB = 0;
 PFNGLGETBUFFERPARAMETERIVARBPROC pglGetBufferParameterivARB = 0;
 PFNGLMAPBUFFERARBPROC pglMapBufferARB = 0;
 PFNGLUNMAPBUFFERARBPROC pglUnmapBufferARB = 0;
-#define glGenBuffersARB           pglGenBuffersARB
-#define glBindBufferARB           pglBindBufferARB
-#define glBufferDataARB           pglBufferDataARB
-#define glBufferSubDataARB        pglBufferSubDataARB
-#define glDeleteBuffersARB        pglDeleteBuffersARB
-#define glGetBufferParameterivARB pglGetBufferParameterivARB
-#define glMapBufferARB            pglMapBufferARB
-#define glUnmapBufferARB          pglUnmapBufferARB
+#define srt_glGenBuffers           pglGenBuffersARB
+#define srt_glBindBuffer           pglBindBufferARB
+#define srt_glBufferData           pglBufferDataARB
+#define srt_glBufferSubData        pglBufferSubDataARB
+#define srt_glDeleteBuffers        pglDeleteBuffersARB
+#define srt_glGetBufferParameteriv pglGetBufferParameterivARB
+#define srt_glMapBuffer            pglMapBufferARB
+#define srt_glUnmapBuffer          pglUnmapBufferARB
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,7 +86,7 @@ RayTracer::~RayTracer()
 
 	if (mPBOId != 0)
 	{
-		glDeleteBuffersARB(1, &mPBOId);
+		srt_glDeleteBuffers(1, &mPBOId);
 		mPBOId = 0;
 	}
 
@@ -98,29 +99,29 @@ RayTracer::~RayTracer()
 void RayTracer::Start()
 {
 #ifdef _WIN32
-	glGenBuffersARB = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffersARB");
-	glBindBufferARB = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBufferARB");
-	glBufferDataARB = (PFNGLBUFFERDATAARBPROC)wglGetProcAddress("glBufferDataARB");
-	glBufferSubDataARB = (PFNGLBUFFERSUBDATAARBPROC)wglGetProcAddress("glBufferSubDataARB");
-	glDeleteBuffersARB = (PFNGLDELETEBUFFERSARBPROC)wglGetProcAddress("glDeleteBuffersARB");
-	glGetBufferParameterivARB = (PFNGLGETBUFFERPARAMETERIVARBPROC)wglGetProcAddress("glGetBufferParameterivARB");
-	glMapBufferARB = (PFNGLMAPBUFFERARBPROC)wglGetProcAddress("glMapBufferARB");
-	glUnmapBufferARB = (PFNGLUNMAPBUFFERARBPROC)wglGetProcAddress("glUnmapBufferARB");
+	srt_glGenBuffers = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffersARB");
+	srt_glBindBuffer = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBufferARB");
+	srt_glBufferData = (PFNGLBUFFERDATAARBPROC)wglGetProcAddress("glBufferDataARB");
+	srt_glBufferSubData = (PFNGLBUFFERSUBDATAARBPROC)wglGetProcAddress("glBufferSubDataARB");
+	srt_glDeleteBuffers = (PFNGLDELETEBUFFERSARBPROC)wglGetProcAddress("glDeleteBuffersARB");
+	srt_glGetBufferParameteriv = (PFNGLGETBUFFERPARAMETERIVARBPROC)wglGetProcAddress("glGetBufferParameterivARB");
+	srt_glMapBuffer = (PFNGLMAPBUFFERARBPROC)wglGetProcAddress("glMapBufferARB");
+	srt_glUnmapBuffer = (PFNGLUNMAPBUFFERARBPROC)wglGetProcAddress("glUnmapBufferARB");
 
-	if(glGenBuffersARB && glBindBufferARB && glBufferDataARB && glBufferSubDataARB && glMapBufferARB && glUnmapBufferARB && glDeleteBuffersARB && glGetBufferParameterivARB)
+	if(srt_glGenBuffers && srt_glBindBuffer && srt_glBufferData && srt_glBufferSubData && srt_glMapBuffer && srt_glUnmapBuffer && srt_glDeleteBuffers && srt_glGetBufferParameteriv)
 	{
 		mPBOSupported = true;
 	}
 #else
-	// TODO:
+#error current platform is not supported
 #endif
 
 	if (mPBOSupported)
 	{
-		glGenBuffersARB(1, &mPBOId);
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		srt_glGenBuffers(1, &mPBOId);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		srt_glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 		mpTextureData = nullptr;
 	}
 	else
@@ -150,7 +151,7 @@ void RayTracer::OnSetScene()
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
 	if (mPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SimpleRayTracerApp::SCREEN_WIDTH, SimpleRayTracerApp::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData.get());
 
@@ -162,9 +163,9 @@ void RayTracer::OnSetScene()
 
 	if (mPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
-		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
-		std::unique_ptr<unsigned char[]> pColorBuffer((unsigned char*) glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		srt_glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, COLOR_BUFFER_SIZE, 0, GL_STREAM_DRAW_ARB);
+		std::unique_ptr<unsigned char[]> pColorBuffer((unsigned char*) srt_glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
 		if (pColorBuffer != nullptr)
 		{
 			auto start = Time::Now();
@@ -173,10 +174,10 @@ void RayTracer::OnSetScene()
 			// DEBUG:
 			std::cout << "Ray tracing took " << (end - start) << " seconds" << std::endl;
 		}
-		glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+		srt_glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 		pColorBuffer.release();
 
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 	}
 	else
 	{
@@ -201,7 +202,7 @@ void RayTracer::Render()
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
 	if (mPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mPBOId);
 	}
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SimpleRayTracerApp::SCREEN_WIDTH, SimpleRayTracerApp::SCREEN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, (void*)mpTextureData.get());
 
@@ -231,7 +232,7 @@ void RayTracer::Render()
 
 	if (mPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		srt_glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 	}
 }
 
@@ -257,16 +258,19 @@ void RayTracer::SetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rayOri
 //////////////////////////////////////////////////////////////////////////
 void RayTracer::TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer)
 {
-	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0, rayMetadataIndex = 0; y < SimpleRayTracerApp::SCREEN_HEIGHT; y++)
+	auto numSteps = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
+	for (unsigned int y = 0, colorBufferIndex = 0, depthBufferIndex = 0, rayMetadataIndex = 0, step = 0; y < SimpleRayTracerApp::SCREEN_HEIGHT; y++)
 	{
-		for (unsigned int x = 0; x < SimpleRayTracerApp::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++)
+		for (unsigned int x = 0; x < SimpleRayTracerApp::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++, step++)
 		{
-			Ray& rRay = mScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
+			Ray rRay = mScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
 			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex]);
 			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex], 0);
-			setColor(colorBuffer, colorBufferIndex, color);
+			srt_setColor(colorBuffer, colorBufferIndex, color);
 		}
+		std::fprintf(stdout, "\rTracing rays (%.3f%%)", (step / (double)numSteps) * 100);
 	}
+	std::fprintf(stdout, "\n");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -403,7 +407,7 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, iteration + 1, sceneObject));
 	}
 
-	clampColor(color, 0, 1);
+	srt_clampColor(color, 0, 1);
 
 	return color;
 }

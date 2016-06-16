@@ -7464,16 +7464,16 @@ typedef GLboolean (APIENTRYP PFNGLISPROGRAMARBPROC) (GLuint program);
 #ifndef GL_ARB_vertex_buffer_object
 #define GL_ARB_vertex_buffer_object 1
 #ifdef GL_GLEXT_PROTOTYPES
-GLAPI void APIENTRY glBindBufferARB (GLenum target, GLuint buffer);
-GLAPI void APIENTRY glDeleteBuffersARB (GLsizei n, const GLuint *buffers);
-GLAPI void APIENTRY glGenBuffersARB (GLsizei n, GLuint *buffers);
+GLAPI void APIENTRY srt_glBindBuffer (GLenum target, GLuint buffer);
+GLAPI void APIENTRY srt_glDeleteBuffers (GLsizei n, const GLuint *buffers);
+GLAPI void APIENTRY srt_glGenBuffers (GLsizei n, GLuint *buffers);
 GLAPI GLboolean APIENTRY glIsBufferARB (GLuint buffer);
-GLAPI void APIENTRY glBufferDataARB (GLenum target, GLsizeiptrARB size, const GLvoid *data, GLenum usage);
-GLAPI void APIENTRY glBufferSubDataARB (GLenum target, GLintptrARB offset, GLsizeiptrARB size, const GLvoid *data);
+GLAPI void APIENTRY srt_glBufferData (GLenum target, GLsizeiptrARB size, const GLvoid *data, GLenum usage);
+GLAPI void APIENTRY srt_glBufferSubData (GLenum target, GLintptrARB offset, GLsizeiptrARB size, const GLvoid *data);
 GLAPI void APIENTRY glGetBufferSubDataARB (GLenum target, GLintptrARB offset, GLsizeiptrARB size, GLvoid *data);
-GLAPI GLvoid* APIENTRY glMapBufferARB (GLenum target, GLenum access);
-GLAPI GLboolean APIENTRY glUnmapBufferARB (GLenum target);
-GLAPI void APIENTRY glGetBufferParameterivARB (GLenum target, GLenum pname, GLint *params);
+GLAPI GLvoid* APIENTRY srt_glMapBuffer (GLenum target, GLenum access);
+GLAPI GLboolean APIENTRY srt_glUnmapBuffer (GLenum target);
+GLAPI void APIENTRY srt_glGetBufferParameteriv (GLenum target, GLenum pname, GLint *params);
 GLAPI void APIENTRY glGetBufferPointervARB (GLenum target, GLenum pname, GLvoid* *params);
 #endif /* GL_GLEXT_PROTOTYPES */
 typedef void (APIENTRYP PFNGLBINDBUFFERARBPROC) (GLenum target, GLuint buffer);

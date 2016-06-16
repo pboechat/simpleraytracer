@@ -233,6 +233,12 @@ struct Vector4F
 		return mValues[i];
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	inline Vector3F xyz() const
+	{
+		return Vector3F(mValues[0], mValues[1], mValues[2]);
+	}
+
 private:
 	float mValues[4];
 
