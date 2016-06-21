@@ -6,6 +6,7 @@
 struct RayMetadata
 {
 	Vector3F start;
+	Vector3F direction;
 	Vector3F end;
 	bool isReflection;
 	bool isRefraction;

@@ -40,10 +40,9 @@ private:
 	std::unique_ptr<unsigned char[]> mpTextureData;
 	std::unique_ptr<float[]> mpDepthBuffer;
 
-	void CreateBuffers();
 	void TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer);
-	void ResetRayMetadata(RayMetadata& rRayMetadata);
-	void SetRayMetadata(RayMetadata& rayMetadata, const Vector3F& rayOrigin, const Vector3F& hitPoint) const;
+	void ResetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rRayOrigin, const Vector3F& rRayDirection);
+	void SetRayMetadata(RayMetadata& rayMetadata, const Vector3F& hitPoint) const;
 	ColorRGBA TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float* pCurrentDepth, unsigned int iteration, std::shared_ptr<SceneObject> pIgnoreSceneObject = std::shared_ptr<SceneObject>(nullptr)) const;
 	ColorRGBA Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray& rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const;
 	bool IsLightBlocked(const Ray& rShadowRay, float distanceToLight, std::shared_ptr<SceneObject> origin) const;

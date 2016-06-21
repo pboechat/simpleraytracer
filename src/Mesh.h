@@ -9,7 +9,7 @@
 #include "Vector2F.h"
 #include "BoundingVolume.h"
 
-#define EPSILON 0.000001f
+#define srt_triangleIntersectEpsilon 0.000001f
 
 struct Mesh : public SceneObject
 {
@@ -24,13 +24,8 @@ public:
 	std::vector<unsigned int> indices;
 	std::unique_ptr<BoundingVolume> boundingVolume;
 
-	Mesh()
-	{
-	}
-
-	virtual ~Mesh()
-	{
-	}
+	Mesh() = default;
+	virtual ~Mesh() = default;
 
 	virtual void Update()
 	{
@@ -125,19 +120,19 @@ public:
 private:
 	bool BackFaceCullTriangleIntersection(const Ray& rRay, const Vector3F& rP1, const Vector3F& rP2, const Vector3F& rP3, float* u, float* v, float* t) const
 	{
-		Vector3F& rEdge1 = (rP2 - rP1);
-		Vector3F& rEdge2 = (rP3 - rP1);
+		Vector3F rEdge1 = (rP2 - rP1);
+		Vector3F rEdge2 = (rP3 - rP1);
 
-		Vector3F& rPVec = rRay.direction.Cross(rEdge2);
+		Vector3F rPVec = rRay.direction.Cross(rEdge2);
 
 		float determinant = rEdge1.Dot(rPVec);
 
-		if (determinant < EPSILON)
+		if (determinant < srt_triangleIntersectEpsilon)
 		{
 			return false;
 		}
 
-		Vector3F& rTVec = (rRay.origin - rP1);
+		Vector3F rTVec = (rRay.origin - rP1);
 
 		*u = rTVec.Dot(rPVec);
 
@@ -146,7 +141,7 @@ private:
 			return false;
 		}
 
-		Vector3F& rQVec = rTVec.Cross(rEdge1);
+		Vector3F rQVec = rTVec.Cross(rEdge1);
 
 		*v = rRay.direction.Dot(rQVec);
 

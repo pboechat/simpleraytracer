@@ -36,7 +36,7 @@ public:
 
 	int Run(unsigned int argc, const char** argv);
 
-	void EnableRayDebugging(const Vector2F& rRayToDebug);
+	void EnableRayDebugging();
 	void DisableRayDebugging();
 	void Close();
 
@@ -52,6 +52,8 @@ private:
 	static const PIXELFORMATDESCRIPTOR PIXEL_FORMAT_DESCRIPTOR;
 	static const float ANGLE_INCREMENT;
 	static const float CAMERA_PITCH_LIMIT;
+	static const float CAMERA_MOVE_SPEED;
+	static const float DEBUG_RAY_MOVE_SPEED;
 
 	static SimpleRayTracerApp* s_mpInstance;
 
@@ -73,6 +75,7 @@ private:
 	Vector2F mLastMousePosition;
 	float mCameraPhi;
 	float mCameraTheta;
+	Vector2F mDebugRayCoords;
 
 	SimpleRayTracerApp();
 	~SimpleRayTracerApp();
@@ -85,20 +88,24 @@ private:
 	void MouseButtonDown(unsigned int button, int x, int y);
 	void MouseButtonUp(unsigned int button, int x, int y);
 	void MouseMove(int x, int y);
-	void MoveCameraLeft();
-	void MoveCameraRight();
-	void MoveCameraForward();
-	void MoveCameraBackward();
-	void MoveCameraUp();
-	void MoveCameraDown();
+	void MoveCameraLeft(float deltaTime);
+	void MoveCameraRight(float deltaTime);
+	void MoveCameraForward(float deltaTime);
+	void MoveCameraBackward(float deltaTime);
+	void MoveCameraUp(float deltaTime);
+	void MoveCameraDown(float deltaTime);
 	void TurnCameraUp();
 	void TurnCameraDown();
 	void TurnCameraLeft();
 	void TurnCameraRight();
 	void UpdateCameraRotation();
 	bool IsRayTracingEnabled() const;
-	void ProcessKeys(double deltaTime);
-
+	void ProcessKeys(float deltaTime);
+	void MoveDebugRayLeft(float deltaTime);
+	void MoveDebugRayRight(float deltaTime);
+	void MoveDebugRayUp(float deltaTime);
+	void MoveDebugRayDown(float deltaTime);
+	void UpdateDebugRay();
 };
 
 

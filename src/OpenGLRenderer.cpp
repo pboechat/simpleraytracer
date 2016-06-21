@@ -22,7 +22,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 OpenGLRenderer::OpenGLRenderer() :
-	mDebugRayEnabled(false)
+	mDebugRayEnabled(false),
+	mpRayToDebug(nullptr)
 {
 }
 
@@ -148,14 +149,9 @@ void OpenGLRenderer::RenderRay()
 	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 	glLineWidth(1.5f);
 
-	const RayMetadata* pRay = &mRayToDebug;
-	while (pRay != 0)
+	auto* pRay = mpRayToDebug;
+	while (pRay != nullptr)
 	{
-		if (pRay->end.x() == -1)
-		{
-			break;
-		}
-
 		if (pRay->isReflection)
 		{
 			glColor4f(0, 1, 1, 1);
@@ -171,7 +167,10 @@ void OpenGLRenderer::RenderRay()
 
 		glBegin(GL_LINES);
 		glVertex3fv(&pRay->start[0]);
-		glVertex3fv(&pRay->end[0]);
+		Vector3F end = pRay->end;
+		if (end.x() == -1)
+			end = pRay->start + (pRay->direction * 100000.0f);
+		glVertex3fv(&end[0]);
 		glEnd();
 
 		pRay = pRay->next;

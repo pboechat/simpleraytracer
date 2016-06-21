@@ -237,16 +237,17 @@ void RayTracer::Render()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void RayTracer::ResetRayMetadata(RayMetadata& rRayMetadata)
+void RayTracer::ResetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rRayOrigin, const Vector3F& rRayDirection)
 {
+	rRayMetadata.start = rRayOrigin;
+	rRayMetadata.direction = rRayDirection;
 	rRayMetadata.isReflection = false;
 	rRayMetadata.isRefraction = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void RayTracer::SetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rayOrigin, const Vector3F& hitPoint) const
+void RayTracer::SetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& hitPoint) const
 {
-	rRayMetadata.start = rayOrigin;
 	if (rRayMetadata.next != 0)
 	{
 		delete rRayMetadata.next;
@@ -264,7 +265,7 @@ void RayTracer::TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer)
 		for (unsigned int x = 0; x < SimpleRayTracerApp::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++, step++)
 		{
 			Ray rRay = mScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
-			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex]);
+			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex], rRay.origin, rRay.direction);
 			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex], 0);
 			srt_setColor(colorBuffer, colorBufferIndex, color);
 		}
@@ -304,7 +305,7 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 
 				*pCurrentDepth = depth;
 
-				SetRayMetadata(rRayMetadata, rRay.origin, hit.point);
+				SetRayMetadata(rRayMetadata, hit.point);
 
 				ColorRGBA currentColor = Shade(sceneObject, rRay, hit, rRayMetadata, iteration);
 

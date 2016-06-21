@@ -36,6 +36,8 @@ const ColorRGBA SimpleRayTracerApp::CLEAR_COLOR(0, 0, 0, 1);
 const ColorRGBA SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
 const float SimpleRayTracerApp::ANGLE_INCREMENT = 0.05f;
 const float SimpleRayTracerApp::CAMERA_PITCH_LIMIT = 1.0472f; // 60 deg.
+const float SimpleRayTracerApp::CAMERA_MOVE_SPEED = 10.0f;
+const float SimpleRayTracerApp::DEBUG_RAY_MOVE_SPEED = 1000.0f;
 
 //////////////////////////////////////////////////////////////////////////
 SimpleRayTracerApp::SimpleRayTracerApp() :
@@ -54,7 +56,8 @@ SimpleRayTracerApp::SimpleRayTracerApp() :
 	mRightMouseButtonPressed(false),
 	mLastMousePosition(-1, -1),
 	mCameraPhi(0),
-	mCameraTheta(0)
+	mCameraTheta(0),
+	mDebugRayCoords(0, 0)
 {
 	memset(mKeys, 0, sizeof(bool) * 0xFF);
 	memset(mPressedKeys, 0, sizeof(bool) * 0xFF);
@@ -68,15 +71,25 @@ SimpleRayTracerApp::~SimpleRayTracerApp()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::EnableRayDebugging(const Vector2F& rRayToDebug)
+void SimpleRayTracerApp::EnableRayDebugging()
 {
-	unsigned int rayIndex = (unsigned int)rRayToDebug.y() * SCREEN_WIDTH + (unsigned int)rRayToDebug.x();
-	mOpenGLRenderer->EnableDebugRay(mRayTracer->GetRaysMetadata()[rayIndex]);
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
+	mOpenGLRenderer->EnableDebugRay();
+	UpdateDebugRay();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::DisableRayDebugging()
 {
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
 	mOpenGLRenderer->DisableDebugRay();
 }
 
@@ -143,7 +156,8 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 				mScene->Update();
 				mRenderer->Render();
 				auto end = Time::Now();
-				ProcessKeys(end - start);
+				float deltaTime = static_cast<float>(end - start);
+				ProcessKeys(deltaTime);
 				memset(mPressedKeys, 0, sizeof(bool) * 0xFF);
 				SwapBuffers(mDeviceContextHandle);
 			}
@@ -224,7 +238,7 @@ void SimpleRayTracerApp::LoadSceneFromXML()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraLeft()
+void SimpleRayTracerApp::MoveCameraLeft(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
@@ -232,11 +246,11 @@ void SimpleRayTracerApp::MoveCameraLeft()
 	}
 
 	auto& camera = mScene->GetCamera();
-	camera->localTransform.position -= camera->localTransform.right();
+	camera->localTransform.position -= camera->localTransform.right() * deltaTime * CAMERA_MOVE_SPEED;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraRight()
+void SimpleRayTracerApp::MoveCameraRight(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
@@ -244,11 +258,11 @@ void SimpleRayTracerApp::MoveCameraRight()
 	}
 
 	auto& camera = mScene->GetCamera();
-	camera->localTransform.position += camera->localTransform.right();
+	camera->localTransform.position += camera->localTransform.right() * deltaTime * CAMERA_MOVE_SPEED;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraForward()
+void SimpleRayTracerApp::MoveCameraForward(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
@@ -256,11 +270,11 @@ void SimpleRayTracerApp::MoveCameraForward()
 	}
 
 	auto& camera = mScene->GetCamera();
-	camera->localTransform.position -= camera->localTransform.forward();
+	camera->localTransform.position -= camera->localTransform.forward() * deltaTime * CAMERA_MOVE_SPEED;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraBackward()
+void SimpleRayTracerApp::MoveCameraBackward(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
@@ -268,31 +282,31 @@ void SimpleRayTracerApp::MoveCameraBackward()
 	}
 
 	auto& camera = mScene->GetCamera();
-	camera->localTransform.position += camera->localTransform.forward();
+	camera->localTransform.position += camera->localTransform.forward() * deltaTime * CAMERA_MOVE_SPEED;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraUp()
+void SimpleRayTracerApp::MoveCameraUp(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
-	camera->localTransform.position += Vector3F(0, 1, 0);
+	auto& camera = mScene->GetCamera();
+	camera->localTransform.position += Vector3F(0, deltaTime * CAMERA_MOVE_SPEED, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SimpleRayTracerApp::MoveCameraDown()
+void SimpleRayTracerApp::MoveCameraDown(float deltaTime)
 {
 	if (IsRayTracingEnabled())
 	{
 		return;
 	}
 
-	std::unique_ptr<Camera>& camera = mScene->GetCamera();
-	camera->localTransform.position -= Vector3F(0, 1, 0);
+	auto& camera = mScene->GetCamera();
+	camera->localTransform.position -= Vector3F(0, deltaTime * CAMERA_MOVE_SPEED, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -301,17 +315,13 @@ bool SimpleRayTracerApp::IsRayTracingEnabled() const
 	return mRenderer == mRayTracer;
 }
 
-void SimpleRayTracerApp::ProcessKeys(double deltaTime)
+void SimpleRayTracerApp::ProcessKeys(float deltaTime)
 {
 	if (mPressedKeys[VK_ESCAPE])
 	{
 		DestroyWindow(mWindowHandle);
 	}
-	else if (mPressedKeys[VK_F5])
-	{
-		mLoadScene = true;
-	}
-	else if (mPressedKeys[VK_F2])
+	else if (mPressedKeys[VK_F1])
 	{
 		if (mRenderer == mRayTracer)
 			mRenderer = mOpenGLRenderer;
@@ -319,30 +329,111 @@ void SimpleRayTracerApp::ProcessKeys(double deltaTime)
 			mRenderer = mRayTracer;
 		mRenderer->SetScene(mScene);
 	}
+	else if (mPressedKeys[VK_F2])
+	{
+		EnableRayDebugging();
+	}
+	else if (mPressedKeys[VK_F5])
+	{
+		mLoadScene = true;
+	}
+	else if (mPressedKeys[VK_NUMPAD4])
+	{
+		MoveDebugRayLeft(deltaTime);
+	}
+	else if (mPressedKeys[VK_NUMPAD6])
+	{
+		MoveDebugRayRight(deltaTime);
+	}
+	else if (mPressedKeys[VK_NUMPAD8])
+	{
+		MoveDebugRayUp(deltaTime);
+	}
+	else if (mPressedKeys[VK_NUMPAD5])
+	{
+		MoveDebugRayDown(deltaTime);
+	}
 	else if (mKeys[VK_LEFT] || mKeys[65])
 	{
-		MoveCameraLeft();
+		MoveCameraLeft(deltaTime);
 	}
 	else if (mKeys[VK_RIGHT] || mKeys[68])
 	{
-		MoveCameraRight();
+		MoveCameraRight(deltaTime);
 	}
 	else if (mKeys[VK_UP] || mKeys[87])
 	{
-		MoveCameraForward();
+		MoveCameraForward(deltaTime);
 	}
 	else if (mKeys[VK_DOWN] || mKeys[83])
 	{
-		MoveCameraBackward();
+		MoveCameraBackward(deltaTime);
 	}
 	else if (mKeys[81] || mKeys[33])
 	{
-		MoveCameraUp();
+		MoveCameraUp(deltaTime);
 	}
 	else if (mKeys[69] || mKeys[34])
 	{
-		MoveCameraDown();
+		MoveCameraDown(deltaTime);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::MoveDebugRayLeft(float deltaTime)
+{
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
+	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH);
+	UpdateDebugRay();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::MoveDebugRayRight(float deltaTime)
+{
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
+	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH);
+	unsigned int rayIndex = static_cast<unsigned int>(mDebugRayCoords.y()) * SCREEN_WIDTH + static_cast<unsigned int>(mDebugRayCoords.x());
+	UpdateDebugRay();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::MoveDebugRayUp(float deltaTime)
+{
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+
+	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT);
+	UpdateDebugRay();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::MoveDebugRayDown(float deltaTime)
+{
+	if (IsRayTracingEnabled())
+	{
+		return;
+	}
+	
+	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT);
+	UpdateDebugRay();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SimpleRayTracerApp::UpdateDebugRay()
+{
+	unsigned int rayIndex = static_cast<unsigned int>(mDebugRayCoords.y()) * SCREEN_WIDTH + static_cast<unsigned int>(mDebugRayCoords.x());
+	std::cout << "rayIndex: " << rayIndex << std::endl;
+	mOpenGLRenderer->SetDebugRay(mRayTracer->GetRaysMetadata()[rayIndex]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -456,17 +547,15 @@ void SimpleRayTracerApp::TurnCameraRight()
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::UpdateCameraRotation()
 {
-	// DEBUG:
-	//std::cout << "phi: " << srt_degree(mCameraPhi) << " / theta: " << srt_degree(mCameraTheta) << std::endl;
 	float cosPhi = cos(mCameraPhi);
 	float sinPhi = sin(mCameraPhi);
 	float cosTheta = cos(mCameraTheta);
 	float sinTheta = sin(mCameraTheta);
-	Vector3F w(cosTheta * cosPhi, sinTheta, cosTheta * sinPhi);
-	Vector3F v(-sinTheta * cosPhi, cosTheta, -sinTheta * sinPhi);
-	Vector3F u = v.Cross(w);
+	Vector3F z(cosTheta * cosPhi, sinTheta, cosTheta * sinPhi);
+	Vector3F y(-sinTheta * cosPhi, cosTheta, -sinTheta * sinPhi);
+	Vector3F x = y.Cross(z);
 	auto& camera = mScene->GetCamera();
-	camera->localTransform.rotation = Matrix3x3F(u, v, w);
+	camera->localTransform.rotation = Matrix3x3F(x, y, z);
 }
 
 //////////////////////////////////////////////////////////////////////////

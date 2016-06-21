@@ -74,8 +74,8 @@ public:
 	}
 
 private:
-	StringUtils() {}
-	~StringUtils() {}
+	StringUtils() = default;
+	~StringUtils() = default;
 
 };
 

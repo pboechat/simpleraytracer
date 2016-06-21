@@ -17,9 +17,13 @@ public:
 	OpenGLRenderer();
 	virtual ~OpenGLRenderer();
 
-	inline void EnableDebugRay(const RayMetadata& rRayToDebug)
+	inline void SetDebugRay(const RayMetadata& rRayToDebug)
 	{
-		mRayToDebug = rRayToDebug;
+		mpRayToDebug = &rRayToDebug;
+	}
+
+	inline void EnableDebugRay()
+	{
 		mDebugRayEnabled = true;
 	}
 
@@ -34,7 +38,7 @@ private:
 	std::map<SceneObject*, unsigned int> mTextureIds;
 	std::map<Sphere*, Mesh*> mSphereMeshes;
 	bool mDebugRayEnabled;
-	RayMetadata mRayToDebug;
+	const RayMetadata* mpRayToDebug;
 
 	void RenderMesh(Mesh* pMesh);
 	void RenderRay();
