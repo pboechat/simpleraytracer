@@ -22,6 +22,26 @@ public:
 		return mpRaysMetadata;
 	}
 
+	inline bool DebugEnabled() const
+	{
+		return mDebug;
+	}
+
+	inline void SetDebug(bool debug)
+	{
+		mDebug = debug;
+	}
+
+	inline bool CollectRayMetadataEnabled() const
+	{
+		return mCollectRayMetadata;
+	}
+
+	inline void SetCollectRayMetadata(bool collectRayMetadata)
+	{
+		mCollectRayMetadata = collectRayMetadata;
+	}
+
 	virtual void Start();
 	virtual void Render();
 
@@ -40,6 +60,8 @@ private:
 	bool mPBOSupported;
 	std::unique_ptr<unsigned char[]> mpTextureData;
 	std::unique_ptr<float[]> mpDepthBuffer;
+	bool mDebug;
+	bool mCollectRayMetadata;
 
 	void TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer);
 	void ResetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rRayOrigin, const Vector3F& rRayDirection);

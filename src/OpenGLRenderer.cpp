@@ -22,6 +22,9 @@
 #define SPHERE_MESH_SLICES 100
 
 //////////////////////////////////////////////////////////////////////////
+const float OpenGLRenderer::MISSED_RAY_LENGTH = 100000.0f;
+
+//////////////////////////////////////////////////////////////////////////
 OpenGLRenderer::OpenGLRenderer() :
 	mDebugRayEnabled(false),
 	mpRayToDebug(nullptr)
@@ -31,18 +34,11 @@ OpenGLRenderer::OpenGLRenderer() :
 //////////////////////////////////////////////////////////////////////////
 OpenGLRenderer::~OpenGLRenderer()
 {
-	std::map<SceneObject*, unsigned int>::iterator it;
-	for (it = mTextureIds.begin(); it != mTextureIds.end(); it++)
+	for (auto it = mTextureIds.begin(); it != mTextureIds.end(); it++)
 	{
 		glDeleteTextures(1, &it->second);
 	}
 	mTextureIds.clear();
-
-	std::map<Sphere*, Mesh*>::iterator it2;
-	for (it2 = mSphereMeshes.begin(); it2 != mSphereMeshes.end(); it2++)
-	{
-		delete it2->second;
-	}
 	mSphereMeshes.clear();
 }
 
@@ -80,12 +76,12 @@ void OpenGLRenderer::Render()
 
 		if (srt_is(light, DirectionalLight))
 		{
-			Vector4F lightDirection(camera->inverseRotation() * -srt_cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
+			Vector4F lightDirection(camera->inverseRotation() * -srt_ptr_cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
 		else if (srt_is(light, PointLight))
 		{
-			Vector4F lightPosition((camera->view() * Vector4F(srt_cast(light, PointLight)->position, 1)).xyz(), 1 /* NOTE: indicates point light for OpenGL */);
+			Vector4F lightPosition((camera->view() * Vector4F(srt_ptr_cast(light, PointLight)->position, 1)).xyz(), 1 /* NOTE: indicates point light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
 			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);
@@ -97,15 +93,16 @@ void OpenGLRenderer::Render()
 
 	for (unsigned int i = 0; i < mScene->NumberOfSceneObjects(); i++)
 	{
-		if (auto pSceneObject = mScene->GetSceneObject(i).lock())
+		if (auto sceneObject = mScene->GetSceneObject(i).lock())
 		{
-			if (srt_is(pSceneObject, Mesh))
+			SetUpMaterial(i, sceneObject);
+			if (srt_is(sceneObject, Mesh))
 			{
-				RenderMesh(srt_cast(pSceneObject, Mesh));
+				RenderMesh(i, std::dynamic_pointer_cast<Mesh>(sceneObject));
 			}
-			else if (srt_is(pSceneObject, Sphere))
+			else if (srt_is(sceneObject, Sphere))
 			{
-				RenderSphere(srt_cast(pSceneObject, Sphere));
+				RenderSphere(i, std::dynamic_pointer_cast<Sphere>(sceneObject));
 			}
 		}
 	}
@@ -117,29 +114,22 @@ void OpenGLRenderer::Render()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void OpenGLRenderer::RenderMesh(Mesh* pMesh)
+void OpenGLRenderer::RenderMesh(unsigned int i, std::shared_ptr<Mesh>& mesh)
 {
-	SetUpMaterial(pMesh);
-	RenderTriangles(pMesh->model(), pMesh->indices, pMesh->vertices, pMesh->normals, pMesh->uvs);
+	RenderTriangles(mesh->model(), mesh->indices, mesh->vertices, mesh->normals, mesh->uvs);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void OpenGLRenderer::RenderSphere(Sphere* pSphere)
+void OpenGLRenderer::RenderSphere(unsigned int i, std::shared_ptr<Sphere>& sphere)
 {
-	Mesh* pMesh;
-	std::map<Sphere*, Mesh*>::iterator it = mSphereMeshes.find(pSphere);
-	if (it != mSphereMeshes.end())
+	auto it = mSphereMeshes.find(i);
+	if (it == mSphereMeshes.end())
 	{
-		pMesh = it->second;
+		mSphereMeshes.emplace(std::make_pair(i, CreateMeshForSphere(sphere)));
+		it = mSphereMeshes.find(i);
+		assert(it != mSphereMeshes.end());
 	}
-	else
-	{
-		pMesh = CreateMeshForSphere(pSphere);
-		mSphereMeshes.insert(std::make_pair(pSphere, pMesh));
-	}
-	
-	SetUpMaterial(pSphere);
-	RenderTriangles(pSphere->model(), pMesh->indices, pMesh->vertices, pMesh->normals, pMesh->uvs);
+	RenderTriangles(sphere->model(), it->second->indices, it->second->vertices, it->second->normals, it->second->uvs);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,7 +146,7 @@ void OpenGLRenderer::RenderRay()
 		Vector3F end = pRay->end;
 		bool missed = end.x() == -1;
 		if (missed)
-			end = pRay->start + (pRay->direction * 100000.0f);
+			end = pRay->start + (pRay->direction * MISSED_RAY_LENGTH);
 		if (pRay->isReflection)
 		{
 			glColor4f(0, 1, 1, 1);
@@ -183,28 +173,28 @@ void OpenGLRenderer::RenderRay()
 }
 
 //////////////////////////////////////////////////////////////////////////
-unsigned int OpenGLRenderer::AllocateTextureForSceneObject(SceneObject* pSceneObject)
+unsigned int OpenGLRenderer::AllocateTextureForSceneObject(unsigned int i, std::shared_ptr<SceneObject>& sceneObject)
 {
 	unsigned int textureId;
 
 	glGenTextures(1, &textureId);
 	glBindTexture(GL_TEXTURE_2D, textureId);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pSceneObject->material.texture->width, pSceneObject->material.texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pSceneObject->material.texture->data.get());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sceneObject->material.texture->width, sceneObject->material.texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, sceneObject->material.texture->data.get());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	mTextureIds.insert(std::make_pair(pSceneObject, textureId));
+	mTextureIds.insert(std::make_pair(i, textureId));
 
 	return textureId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
+std::unique_ptr<Mesh> OpenGLRenderer::CreateMeshForSphere(std::shared_ptr<Sphere>& sphere)
 {
-	Mesh* pMesh = new Mesh();
+	std::unique_ptr<Mesh> mesh(new Mesh());
 
 	float uStep = 2 * srt_PI / (SPHERE_MESH_SLICES - 1);
 	float vStep = srt_PI / (SPHERE_MESH_SLICES - 1);
@@ -233,16 +223,16 @@ Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
 				nZ = nZ / n;
 			}
 
-			float x = pSphere->radius * nX;
-			float y = pSphere->radius * nY;
-			float z = pSphere->radius * nZ;
+			float x = sphere->radius * nX;
+			float y = sphere->radius * nY;
+			float z = sphere->radius * nZ;
 
 			Vector3F normal(nX, nY, nZ);
 
-			pMesh->vertices.push_back(Vector3F(x, y, z));
-			pMesh->normals.push_back(normal);
+			mesh->vertices.push_back(Vector3F(x, y, z));
+			mesh->normals.push_back(normal);
 
-			pMesh->uvs.push_back(Vector2F(asin(normal.x()) / srt_PI + 0.5f, asin(normal.y()) / srt_PI + 0.5f));
+			mesh->uvs.push_back(Vector2F(asin(normal.x()) / srt_PI + 0.5f, asin(normal.y()) / srt_PI + 0.5f));
 
 			v += vStep;
 		}
@@ -254,28 +244,28 @@ Mesh* OpenGLRenderer::CreateMeshForSphere(Sphere* pSphere)
 		for (unsigned j = 0; j < SPHERE_MESH_SLICES - 1; j++)
 		{
 			unsigned int p = i * SPHERE_MESH_SLICES + j;
-			pMesh->indices.push_back(p);
-			pMesh->indices.push_back(p + SPHERE_MESH_SLICES);
-			pMesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
-			pMesh->indices.push_back(p);
-			pMesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
-			pMesh->indices.push_back(p + 1);
+			mesh->indices.push_back(p);
+			mesh->indices.push_back(p + SPHERE_MESH_SLICES);
+			mesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
+			mesh->indices.push_back(p);
+			mesh->indices.push_back(p + SPHERE_MESH_SLICES + 1);
+			mesh->indices.push_back(p + 1);
 		}
 	}
 
-	return pMesh;
+	return mesh;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void OpenGLRenderer::SetUpMaterial(SceneObject* pSceneObject)
+void OpenGLRenderer::SetUpMaterial(unsigned int i, std::shared_ptr<SceneObject>& sceneObject)
 {
-	if (pSceneObject->material.texture != 0)
+	if (sceneObject->material.texture != 0)
 	{
 		unsigned int textureId;
-		std::map<SceneObject*, unsigned int>::iterator it = mTextureIds.find(pSceneObject);
+		auto it = mTextureIds.find(i);
 		if (it == mTextureIds.end())
 		{
-			textureId = AllocateTextureForSceneObject(pSceneObject);
+			textureId = AllocateTextureForSceneObject(i, sceneObject);
 		}
 		else
 		{
@@ -289,10 +279,10 @@ void OpenGLRenderer::SetUpMaterial(SceneObject* pSceneObject)
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	glMaterialfv(GL_FRONT, GL_AMBIENT, &pSceneObject->material.ambientColor[0]);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, &pSceneObject->material.diffuseColor[0]);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, &pSceneObject->material.specularColor[0]);
-	glMaterialf(GL_FRONT, GL_SHININESS, pSceneObject->material.shininess);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, &sceneObject->material.ambientColor[0]);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, &sceneObject->material.diffuseColor[0]);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, &sceneObject->material.specularColor[0]);
+	glMaterialf(GL_FRONT, GL_SHININESS, sceneObject->material.shininess);
 }
 
 //////////////////////////////////////////////////////////////////////////

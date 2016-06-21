@@ -110,8 +110,8 @@ void SceneLoader::ParseLight(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>
 {
 	std::string type = GetValue(xmlNode, "type");
 
-	ColorRGBA& rDiffuseColor = GetColorRGBA(xmlNode, "diffuseColor");
-	ColorRGBA& rSpecularColor = GetColorRGBA(xmlNode, "specularColor");
+	ColorRGBA rDiffuseColor = GetColorRGBA(xmlNode, "diffuseColor");
+	ColorRGBA rSpecularColor = GetColorRGBA(xmlNode, "specularColor");
 	float intensity = GetFloat(xmlNode, "intensity");
 
 	if (type == "point")

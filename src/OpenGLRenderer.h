@@ -1,6 +1,7 @@
 #ifndef OPENGLRENDERER_H_
 #define OPENGLRENDERER_H_
 
+#include <memory>
 #include <map>
 
 #include "Renderer.h"
@@ -35,18 +36,20 @@ public:
 	virtual void Render();
 
 private:
-	std::map<SceneObject*, unsigned int> mTextureIds;
-	std::map<Sphere*, Mesh*> mSphereMeshes;
+	static const float MISSED_RAY_LENGTH;
+
+	std::map<unsigned int, unsigned int> mTextureIds;
+	std::map<unsigned int, std::unique_ptr<Mesh>> mSphereMeshes;
 	bool mDebugRayEnabled;
 	const RayMetadata* mpRayToDebug;
 
-	void RenderMesh(Mesh* pMesh);
 	void RenderRay();
-	void RenderSphere(Sphere* pSphere);
-	void SetUpMaterial(SceneObject* pSceneObject);
+	void RenderMesh(unsigned int i, std::shared_ptr<Mesh>& mesh);
+	void RenderSphere(unsigned int i, std::shared_ptr<Sphere>& sphere);
+	void SetUpMaterial(unsigned int i, std::shared_ptr<SceneObject>& sceneObject);
 	void RenderTriangles(const Matrix4F& model, const std::vector<unsigned int>& indices, const std::vector<Vector3F>& vertices, const std::vector<Vector3F>& normals, const std::vector<Vector2F>& uvs);
-	unsigned int AllocateTextureForSceneObject(SceneObject* pSceneOBject);
-	Mesh* CreateMeshForSphere(Sphere* pSphere);
+	unsigned int AllocateTextureForSceneObject(unsigned int i, std::shared_ptr<SceneObject>& pSceneObject);
+	std::unique_ptr<Mesh> CreateMeshForSphere(std::shared_ptr<Sphere>& sphere);
 
 };
 

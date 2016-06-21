@@ -5,7 +5,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-#include <iomanip>
+#include <chrono>
 
 #include "Common.h"
 #include "RayTracer.h"
@@ -20,7 +20,6 @@
 #include "Matrix3x3F.h"
 #include "Matrix4x4F.h"
 #include "SimpleRayTracerApp.h"
-#include "Time.h"
 
 const unsigned int RayTracer::DEPTH_BUFFER_SIZE = SimpleRayTracerApp::SCREEN_WIDTH * SimpleRayTracerApp::SCREEN_HEIGHT;
 const unsigned int RayTracer::COLOR_BUFFER_SIZE = DEPTH_BUFFER_SIZE * SimpleRayTracerApp::BYTES_PER_PIXEL;
@@ -71,7 +70,9 @@ RayTracer::RayTracer() :
 	mPBOId(0),
 	mPBOSupported(false),
 	mpTextureData(nullptr),
-	mpDepthBuffer(nullptr)
+	mpDepthBuffer(nullptr),
+	mDebug(false),
+	mCollectRayMetadata(false)
 {
 }
 
@@ -168,11 +169,10 @@ void RayTracer::OnSetScene()
 		std::unique_ptr<unsigned char[]> pColorBuffer((unsigned char*) srt_glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
 		if (pColorBuffer != nullptr)
 		{
-			auto start = Time::Now();
+			auto start = std::chrono::system_clock::now();
 			TraceRays(pColorBuffer);
-			auto end = Time::Now();
-			// DEBUG:
-			std::cout << "Ray tracing took " << (end - start) << " seconds" << std::endl;
+			auto end = std::chrono::system_clock::now();
+			std::cout << "Ray tracing took " << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0f) << " seconds" << std::endl;
 		}
 		srt_glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 		pColorBuffer.release();
@@ -241,6 +241,7 @@ void RayTracer::ResetRayMetadata(RayMetadata& rRayMetadata, const Vector3F& rRay
 {
 	rRayMetadata.start = rRayOrigin;
 	rRayMetadata.direction = rRayDirection;
+	rRayMetadata.end = Vector3F(-1, -1, -1);
 	rRayMetadata.next = nullptr;
 	rRayMetadata.isReflection = false;
 	rRayMetadata.isRefraction = false;
@@ -262,13 +263,16 @@ void RayTracer::TraceRays(std::unique_ptr<unsigned char[]>& colorBuffer)
 		for (unsigned int x = 0; x < SimpleRayTracerApp::SCREEN_WIDTH; x++, colorBufferIndex += 4, depthBufferIndex++, rayMetadataIndex++, step++)
 		{
 			Ray rRay = mScene->GetCamera()->GetRayFromScreenCoordinates(x, y);
-			ResetRayMetadata(mpRaysMetadata[rayMetadataIndex], rRay.origin, rRay.direction);
+			if (mCollectRayMetadata)
+				ResetRayMetadata(mpRaysMetadata[rayMetadataIndex], rRay.origin, rRay.direction);
 			ColorRGBA color = TraceRay(rRay, mpRaysMetadata[rayMetadataIndex], &mpDepthBuffer[depthBufferIndex], 0);
 			srt_setColor(colorBuffer, colorBufferIndex, color);
 		}
-		std::fprintf(stdout, "\rTracing rays (%.3f%%)", (step / (double)numSteps) * 100);
+		if (mDebug)
+			std::fprintf(stdout, "\rTracing rays (%.3f%%)", (step / (double)numSteps) * 100);
 	}
-	std::fprintf(stdout, "\n");
+	if (mDebug)
+		std::fprintf(stdout, "\n");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -302,7 +306,8 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 
 				*pCurrentDepth = depth;
 
-				SetRayMetadataHitPoint(rRayMetadata, hit.point);
+				if (mCollectRayMetadata)
+					SetRayMetadataHitPoint(rRayMetadata, hit.point);
 
 				ColorRGBA currentColor = Shade(sceneObject, rRay, hit, rRayMetadata, iteration);
 
@@ -324,8 +329,8 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 //////////////////////////////////////////////////////////////////////////
 ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
 {
-	Material& rMaterial = sceneObject->material;
-	const std::unique_ptr<Camera>& camera = mScene->GetCamera();
+	auto& rMaterial = sceneObject->material;
+	const auto& camera = mScene->GetCamera();
 
 	ColorRGBA color = SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT * rMaterial.ambientColor;
 
@@ -340,11 +345,11 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		Vector3F lightDirection;
 		if (srt_is(light, DirectionalLight))
 		{
-			lightDirection = srt_cast(light, DirectionalLight)->direction;
+			lightDirection = srt_ptr_cast(light, DirectionalLight)->direction;
 		}
 		else if (srt_is(light, PointLight))
 		{
-			Vector3F lightPosition = srt_cast(light, PointLight)->position;
+			Vector3F lightPosition = srt_ptr_cast(light, PointLight)->position;
 			lightDirection = (lightPosition - rHit.point).Normalized();
 			distanceToLight = lightPosition.Distance(rHit.point);
 		}
@@ -369,7 +374,7 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 
 		if (srt_is(light, PointLight))
 		{
-			float distanceAttenuation = 1.0f / srt_max(srt_cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
+			float distanceAttenuation = 1.0f / srt_max(srt_ptr_cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
 			colorContribution *= distanceAttenuation;
 		}
 
@@ -381,12 +386,17 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		Vector3F reflectionDirection = (-viewerDirection).Reflection(rNormal).Normalized();
 		Ray reflectionRay(rHit.point, reflectionDirection);
 		float newDepth = camera->zFar();
-		std::unique_ptr<RayMetadata> reflectionRayMetadata(new RayMetadata());
-		reflectionRayMetadata->start = reflectionRay.origin;
-		reflectionRayMetadata->direction = reflectionDirection;
-		reflectionRayMetadata->isReflection = true;
+		std::unique_ptr<RayMetadata> reflectionRayMetadata;
+		if (mCollectRayMetadata)
+		{
+			reflectionRayMetadata = std::unique_ptr<RayMetadata>(new RayMetadata());
+			reflectionRayMetadata->start = reflectionRay.origin;
+			reflectionRayMetadata->direction = reflectionDirection;
+			reflectionRayMetadata->isReflection = true;
+		}
 		color += rMaterial.reflection * TraceRay(reflectionRay, *reflectionRayMetadata, &newDepth, iteration + 1, sceneObject);
-		rRayMetadata.next = std::move(reflectionRayMetadata);
+		if (mCollectRayMetadata)
+			rRayMetadata.next = std::move(reflectionRayMetadata);
 	}
 	else if (rMaterial.refraction > 0)
 	{
@@ -399,12 +409,17 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 
 		Ray refractionRay(rHit.point, rRefractionDirection);
 		float newDepth = camera->zFar();
-		std::unique_ptr<RayMetadata> refractionRayMetadata(new RayMetadata());
-		refractionRayMetadata->start = refractionRay.origin;
-		refractionRayMetadata->direction = rRefractionDirection;
-		refractionRayMetadata->isRefraction = true;
+		std::unique_ptr<RayMetadata> refractionRayMetadata;
+		if (mCollectRayMetadata)
+		{
+			refractionRayMetadata = std::unique_ptr<RayMetadata>(new RayMetadata());
+			refractionRayMetadata->start = refractionRay.origin;
+			refractionRayMetadata->direction = rRefractionDirection;
+			refractionRayMetadata->isRefraction = true;
+		}
 		color = color.Blend(TraceRay(refractionRay, *refractionRayMetadata, &newDepth, iteration + 1, sceneObject));
-		rRayMetadata.next = std::move(refractionRayMetadata);
+		if (mCollectRayMetadata)
+			rRayMetadata.next = std::move(refractionRayMetadata);
 	}
 
 	srt_clampColor(color, 0, 1);

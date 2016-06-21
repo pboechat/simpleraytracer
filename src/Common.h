@@ -7,8 +7,10 @@
 #define srt_PI 3.14159265359f
 #define srt_halfPI 1.57079632679f
 
-#define srt_cast(x, T) dynamic_cast<T*>(x.get())
+#define srt_ptr_cast(x, T) dynamic_cast<T*>(x.get())
 #define srt_is(x, T) dynamic_cast<T*>(x.get()) != 0
+
+#define srt_boolStr(x) ((x) ? "true" : "false")
 
 #define srt_max(a, b) (((a) > (b)) ? (a) : (b))
 #define srt_min(a, b) (((a) < (b)) ? (a) : (b))

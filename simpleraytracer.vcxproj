@@ -178,8 +178,6 @@
     <ClInclude Include="src\StringUtils.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\TextureLoader.h" />
-    <ClInclude Include="src\Thread.h" />
-    <ClInclude Include="src\Time.h" />
     <ClInclude Include="src\TinyObjLoader.h" />
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Vector2F.h" />

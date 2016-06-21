@@ -2,6 +2,7 @@
 #define VECTOR3F_H_
 
 #include <cmath>
+#include <string>
 
 struct Vector4F;
 
@@ -256,6 +257,11 @@ struct Vector3F
 	inline float Angle(const Vector3F& rOther) const
 	{
 		return acos(Dot(rOther) / (Length() * rOther.Length()));
+	}
+
+	std::string ToString() const
+	{
+		return "(" + std::to_string(mValues[0]) + ", " + std::to_string(mValues[1]) + ", " + std::to_string(mValues[2]) + ")";
 	}
 
 private:

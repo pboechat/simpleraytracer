@@ -106,6 +106,8 @@ private:
 	void MoveDebugRayUp(float deltaTime);
 	void MoveDebugRayDown(float deltaTime);
 	void UpdateDebugRay();
+	void ToggleCollectRayMetadata();
+	void ToggleRayTraceDebug();
 
 };
 
