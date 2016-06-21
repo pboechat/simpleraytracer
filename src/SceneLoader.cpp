@@ -1,3 +1,9 @@
+#include <string.h>
+#include <memory>
+#include <vector>
+#include <stdexcept>
+#include <cassert>
+
 #include "SceneLoader.h"
 #include "FileReader.h"
 #include "PointLight.h"
@@ -9,25 +15,21 @@
 #include "StringUtils.h"
 #include "BoundingSphere.h"
 #include "OBB.h"
-
-#include <string.h>
-#include <vector>
-#include <exception>
-#include <memory>
+#include "ModelLoader.h"
 
 //////////////////////////////////////////////////////////////////////////
 std::unique_ptr<Scene> SceneLoader::LoadFromXML(const std::string& fileName)
 {
 	if (fileName.empty())
 	{
-		throw std::exception("empty scene file name");
+		throw std::runtime_error("empty scene file name");
 	}
 
 	std::string sceneFileContent(FileReader::Read<char>(fileName, FileMode::FM_TEXT, true).get());
 
 	if (sceneFileContent.empty())
 	{
-		throw std::exception("empty scene file");
+		throw std::runtime_error("empty scene file");
 	}
 
 	rapidxml::xml_document<> doc;
@@ -39,6 +41,11 @@ std::unique_ptr<Scene> SceneLoader::LoadFromXML(const std::string& fileName)
 	auto* root = doc.first_node();
 	if (root && strcmp("Scene", root->name()) == 0)
 	{
+		if (HasValue(root, "ambientLight"))
+		{
+			scene->ambientLight = GetColorRGBA(root, "ambientLight");
+		}
+
 		for (auto* child = root->first_node(); child; child = child->next_sibling())
 		{
 			Traverse(scene, sceneObjects, sceneObjectParenting, child);
@@ -61,7 +68,7 @@ std::unique_ptr<Scene> SceneLoader::LoadFromXML(const std::string& fileName)
 	}
 	else
 	{
-		throw std::exception("invalid scene file");
+		throw std::runtime_error("invalid scene file");
 	}
 
 	return scene;
@@ -156,22 +163,33 @@ void SceneLoader::ParseSphere(std::unique_ptr<Scene>& scene, std::map<int, std::
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ParseMesh(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& sceneObjectParenting, rapidxml::xml_node<>* xmlNode)
 {
-	std::shared_ptr<Mesh> mesh(new Mesh());
+	std::shared_ptr<Mesh> mesh;
 
 	int id = GetInt(xmlNode, "id");
 	int parentId = GetInt(xmlNode, "parentId");
 
 	sceneObjectParenting[id] = parentId;
 
-	std::string verticesFileName = GetValue(xmlNode, "vertices");
-	std::string pNormalsFileName = GetValue(xmlNode, "normals");
-	std::string uvsFileName = GetValue(xmlNode, "uvs");
-	std::string indicesFileName = GetValue(xmlNode, "indices");
-
-	ReadFileToVector(verticesFileName, mesh->vertices);
-	ReadFileToVector(pNormalsFileName, mesh->normals);
-	ReadFileToVector(uvsFileName, mesh->uvs);
-	ReadFileToVector(indicesFileName, mesh->indices);
+	if (HasValue(xmlNode, "obj"))
+	{
+		mesh = ModelLoader::LoadObj(GetValue(xmlNode, "obj"));
+	}
+	else
+	{
+		std::string verticesFileName = GetValue(xmlNode, "vertices");
+		std::string normalsFileName = GetValue(xmlNode, "normals");
+		std::string uvsFileName = GetValue(xmlNode, "uvs");
+		std::string indicesFileName = GetValue(xmlNode, "indices");
+		assert(verticesFileName != "");
+		assert(normalsFileName != "");
+		assert(uvsFileName != "");
+		assert(indicesFileName != "");
+		mesh = std::unique_ptr<Mesh>(new Mesh());
+		ReadFileToVector(verticesFileName, mesh->vertices);
+		ReadFileToVector(normalsFileName, mesh->normals);
+		ReadFileToVector(uvsFileName, mesh->uvs);
+		ReadFileToVector(indicesFileName, mesh->indices);
+	}
 
 	for (auto* child = xmlNode->first_node(); child; child = child->next_sibling())
 	{
@@ -186,17 +204,20 @@ void SceneLoader::ParseMesh(std::unique_ptr<Scene>& scene, std::map<int, std::sh
 	}
 
 	// TODO: generalize bounding volume creation
-	std::unique_ptr<BoundingVolume> pBoundingVolume(new BoundingSphere());
-	pBoundingVolume->Compute(mesh->vertices);
-	mesh->boundingVolume = std::move(pBoundingVolume);
-
+	std::unique_ptr<BoundingVolume> boundingVolume(new BoundingSphere());
+	boundingVolume->Compute(mesh->vertices);
+	mesh->boundingVolume = std::move(boundingVolume);
+	
 	sceneObjects[id] = mesh;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ParseTransform(rapidxml::xml_node<>* xmlNode, Transform& transform)
 {
-	transform.scale = GetMatrix3x3F(xmlNode, "scale");
+	auto scaleVector = GetVector3F(xmlNode, "scale");
+	transform.scale = Matrix3x3F(scaleVector.x(), 0, 0,
+		0, scaleVector.y(), 0,
+		0, 0, scaleVector.z());
 	transform.rotation = GetMatrix3x3F(xmlNode, "rotation");
 	transform.position = GetVector3F(xmlNode, "position");
 }
@@ -204,7 +225,6 @@ void SceneLoader::ParseTransform(rapidxml::xml_node<>* xmlNode, Transform& trans
 //////////////////////////////////////////////////////////////////////////
 void SceneLoader::ParseMaterial(rapidxml::xml_node<>* xmlNode, Material& material)
 {
-	material.ambientColor = GetColorRGBA(xmlNode, "ambientColor");
 	material.diffuseColor = GetColorRGBA(xmlNode, "diffuseColor");
 	material.specularColor = GetColorRGBA(xmlNode, "specularColor");
 	material.shininess = GetFloat(xmlNode, "shininess");
@@ -218,6 +238,20 @@ void SceneLoader::ParseMaterial(rapidxml::xml_node<>* xmlNode, Material& materia
 	material.transparent = GetBool(xmlNode, "transparent");
 	material.reflection = GetFloat(xmlNode, "reflection");
 	material.refraction = GetFloat(xmlNode, "refraction");
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool SceneLoader::HasValue(rapidxml::xml_node<>* xmlNode, const std::string& name)
+{
+	for (rapidxml::xml_attribute<>* attribute = xmlNode->first_attribute(); attribute; attribute = attribute->next_attribute())
+	{
+		if (name == attribute->name())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -259,7 +293,7 @@ int SceneLoader::GetInt(rapidxml::xml_node<>* xmlNode, const std::string& name)
 		n = sscanf(intStr.c_str(), "%d", &i);
 		if (n < 1)
 		{
-			throw std::exception("invalid attribute size");
+			throw std::runtime_error("invalid attribute size");
 		}
 	}
 
@@ -277,7 +311,7 @@ bool SceneLoader::GetBool(rapidxml::xml_node<>* xmlNode, const std::string& name
 		n = sscanf(boolStr.c_str(), "%d", &b);
 		if (n < 1)
 		{
-			throw std::exception("invalid attribute size");
+			throw std::runtime_error("invalid attribute size");
 		}
 	}
 
@@ -287,14 +321,13 @@ bool SceneLoader::GetBool(rapidxml::xml_node<>* xmlNode, const std::string& name
 //////////////////////////////////////////////////////////////////////////
 ColorRGBA SceneLoader::GetColorRGBA(rapidxml::xml_node<>* xmlNode, const std::string& name)
 {
-	ColorRGBA color = ColorRGBA::WHITE;
+	ColorRGBA color;
 	std::string colorStr = GetValue(xmlNode, name);
 	if (!colorStr.empty())
 	{
 		int n;
 		n = sscanf(colorStr.c_str(), "%f, %f, %f, %f", &color.r(), &color.g(), &color.b(), &color.a());
 	}
-
 	return color;
 }
 
@@ -309,7 +342,7 @@ Vector3F SceneLoader::GetVector3F(rapidxml::xml_node<>* xmlNode, const std::stri
 		n = sscanf(vectorStr.c_str(), "%f, %f, %f", &vector.x(), &vector.y(), &vector.z());
 		if (n < 1)
 		{
-			throw std::exception("invalid attribute size");
+			throw std::runtime_error("invalid attribute size");
 		}
 	}
 
@@ -327,7 +360,7 @@ Matrix3x3F SceneLoader::GetMatrix3x3F(rapidxml::xml_node<>* xmlNode, const std::
 		n = sscanf(vectorStr.c_str(), "%f, %f, %f, %f, %f, %f, %f, %f, %f", &m11, &m12, &m13, &m21, &m22, &m23, &m31, &m32, &m33);
 		if (n < 1)
 		{
-			throw std::exception("invalid attribute size");
+			throw std::runtime_error("invalid attribute size");
 		}
 	}
 
@@ -377,7 +410,7 @@ void SceneLoader::ReadFileToVector(const std::string& fileName, std::vector<unsi
 		sscanf(rValue.c_str(), "%d", &index);
 		if (index < 0)
 		{
-			throw std::exception("invalid index");
+			throw std::runtime_error("invalid index");
 		}
 		v.push_back((unsigned int)index);
 	}

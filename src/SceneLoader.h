@@ -21,8 +21,8 @@ public:
 	static std::unique_ptr<Scene> LoadFromXML(const std::string& rFileName);
 
 private:
-	SceneLoader() {}
-	~SceneLoader() {}
+	SceneLoader() = default;
+	~SceneLoader() = default;
 
 	static void Traverse(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
 	static void ParseCamera(std::unique_ptr<Scene>& scene, rapidxml::xml_node<>* xmlNode);
@@ -30,6 +30,7 @@ private:
 	static void ParseSphere(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
 	static void ParseMesh(std::unique_ptr<Scene>& scene, std::map<int, std::shared_ptr<SceneObject> >& sceneObjects, std::map<int, int>& rSceneObjectParenting, rapidxml::xml_node<>* xmlNode);
 	static std::string GetValue(rapidxml::xml_node<>* xmlNode, const std::string& name);
+	static bool HasValue(rapidxml::xml_node<>* xmlNode, const std::string& name);
 	static float GetFloat(rapidxml::xml_node<>* xmlNode, const std::string& name);
 	static int GetInt(rapidxml::xml_node<>* xmlNode, const std::string& name);
 	static bool GetBool(rapidxml::xml_node<>* xmlNode, const std::string& name);

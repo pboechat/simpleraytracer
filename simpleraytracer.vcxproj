@@ -189,6 +189,9 @@
     <None Include="scenes\scene2.xml" />
     <None Include="scenes\scene3.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="scenes\scene4.xml" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

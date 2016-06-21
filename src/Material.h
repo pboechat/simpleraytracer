@@ -8,31 +8,34 @@
 
 struct Material
 {
-	ColorRGBA ambientColor;
 	ColorRGBA diffuseColor;
 	ColorRGBA specularColor;
 	float shininess;
-	std::unique_ptr<Texture> texture;
 	bool transparent;
 	float reflection;
 	float refraction;
+	std::unique_ptr<Texture> texture;
 
 	Material() :
-		ambientColor(1, 1, 1, 1),
 		diffuseColor(1, 1, 1, 1),
 		specularColor(1, 1, 1, 1),
 		shininess(1),
+		transparent(false),
+		reflection(false),
+		refraction(false),
 		texture(nullptr)
 	{
 	}
 
-	Material(const ColorRGBA& rAmbientColor, const ColorRGBA& rDiffuseColor, const ColorRGBA& rSpecularColor, float shininess, std::unique_ptr<Texture>& texture) :
-		ambientColor(rAmbientColor),
+	Material(const ColorRGBA& rDiffuseColor, const ColorRGBA& rSpecularColor, float shininess, std::unique_ptr<Texture>& texture) :
 		diffuseColor(rDiffuseColor),
 		specularColor(rSpecularColor),
+		shininess(shininess),
+		transparent(false),
+		reflection(false),
+		refraction(false),
 		texture(std::move(texture))
 	{
-		this->shininess = shininess;
 	}
 
 };

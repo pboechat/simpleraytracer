@@ -1,6 +1,8 @@
 #ifndef COLORRGBA_H_
 #define COLORRGBA_H_
 
+#include "Common.h"
+
 struct ColorRGBA
 {
 	static const ColorRGBA WHITE;
@@ -56,8 +58,7 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	ColorRGBA()
 	{
-		mValues[0] = mValues[1] = mValues[2] = 0.0f;
-		mValues[3] = 1.0f;
+		mValues[0] = mValues[1] = mValues[2] = mValues[3] = 0.0f;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -226,8 +227,12 @@ struct ColorRGBA
 	//////////////////////////////////////////////////////////////////////////
 	inline ColorRGBA Blend(const ColorRGBA& rDstColor) const
 	{
+		float a = srt_clamp(mValues[3], 0, 1);
 		float invA = 1 - mValues[3];
-		return ColorRGBA(mValues[3] * mValues[0] + invA * rDstColor.mValues[0], mValues[3] * mValues[1] + invA * rDstColor.mValues[1], mValues[3] * mValues[2] + invA * rDstColor.mValues[2], mValues[3] * mValues[3] + invA * rDstColor.mValues[3]);
+		return ColorRGBA(a * mValues[0] + invA * rDstColor.mValues[0], 
+						 a * mValues[1] + invA * rDstColor.mValues[1], 
+						 a * mValues[2] + invA * rDstColor.mValues[2], 
+						 a * mValues[3] + invA * rDstColor.mValues[3]);
 	}
 
 private:

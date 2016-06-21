@@ -1,0 +1,13 @@
+<Scene>
+  <Camera fov="60" near="0.3" far="1000" eyePosition="0, 0, 0" forward="0, 0, 1" up="0, 1, 0">
+  </Camera>
+  <Light type="directional" diffuseColor="1, 1, 1, 1" intensity="1" direction="0, -1, 0">
+  </Light>
+  <!--<Mesh id="1" parentId="-1" obj="models/bmw1s_tri.obj">-->
+  <Mesh id="1" parentId="-1" obj="models/chevy_avalanche.obj">
+    <Transform scale="0.01, 0.01, 0.01" rotation="1, 0, 0, 0, 1, 0, 0, 0, 1" position="0, 0, 4">
+    </Transform>
+    <Material diffuseColor="1, 1, 1, 1" specularcolor="0, 0, 0, 0" texture="textures/chevy_avalanche.png" shininess="30" transparent="0" reflection="0" refraction="0">
+    </Material>
+  </Mesh>
+</Scene>

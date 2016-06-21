@@ -64,7 +64,7 @@ void OpenGLRenderer::Render()
 	glClearColor(SimpleRayTracerApp::CLEAR_COLOR.r(), SimpleRayTracerApp::CLEAR_COLOR.g(), SimpleRayTracerApp::CLEAR_COLOR.b(), SimpleRayTracerApp::CLEAR_COLOR.a());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT[0]);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &mScene->ambientLight[0]);
 
 	for (unsigned int i = 0; i < mScene->NumberOfLights(); i++)
 	{
@@ -76,16 +76,17 @@ void OpenGLRenderer::Render()
 
 		if (srt_is(light, DirectionalLight))
 		{
-			Vector4F lightDirection(camera->inverseRotation() * -srt_ptr_cast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
+			Vector4F lightDirection(camera->inverseRotation() * -srt_dynPtrCast(light, DirectionalLight)->direction, 0 /* NOTE: indicates directional light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightDirection[0]);
 		}
 		else if (srt_is(light, PointLight))
 		{
-			Vector4F lightPosition((camera->view() * Vector4F(srt_ptr_cast(light, PointLight)->position, 1)).xyz(), 1 /* NOTE: indicates point light for OpenGL */);
+			auto pointLight = srt_dynPtrCast(light, PointLight);
+			Vector4F lightPosition((camera->view() * Vector4F(pointLight->position, 1)).xyz(), 1 /* NOTE: indicates point light for OpenGL */);
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, &lightPosition[0]);
 			glLightf(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, 0);
-			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, 0);
-			glLightf(GL_LIGHT0 + i, GL_QUADRATIC_ATTENUATION, 1);
+			glLightf(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, pointLight->attenuation);
+			glLightf(GL_LIGHT0 + i, GL_QUADRATIC_ATTENUATION, 0);
 		}
 	}
 
@@ -279,7 +280,6 @@ void OpenGLRenderer::SetUpMaterial(unsigned int i, std::shared_ptr<SceneObject>&
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	glMaterialfv(GL_FRONT, GL_AMBIENT, &sceneObject->material.ambientColor[0]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, &sceneObject->material.diffuseColor[0]);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, &sceneObject->material.specularColor[0]);
 	glMaterialf(GL_FRONT, GL_SHININESS, sceneObject->material.shininess);
@@ -310,15 +310,15 @@ void OpenGLRenderer::RenderTriangles(const Matrix4F& model, const std::vector<un
 			const Vector2F& rUV2 = uvs[i2];
 			const Vector2F& rUV3 = uvs[i3];
 
-			glTexCoord2f(rUV1.x(), rUV1.y());
+			glTexCoord2f(rUV1.x(), 1 - rUV1.y());
 			glNormal3f(rN1.x(), rN1.y(), rN1.z());
 			glVertex3f(rV1.x(), rV1.y(), rV1.z());
 
-			glTexCoord2f(rUV2.x(), rUV2.y());
+			glTexCoord2f(rUV2.x(), 1 - rUV2.y());
 			glNormal3f(rN2.x(), rN2.y(), rN2.z());
 			glVertex3f(rV2.x(), rV2.y(), rV2.z());
 
-			glTexCoord2f(rUV3.x(), rUV3.y());
+			glTexCoord2f(rUV3.x(), 1 - rUV3.y());
 			glNormal3f(rN3.x(), rN3.y(), rN3.z());
 			glVertex3f(rV3.x(), rV3.y(), rV3.z());
 		}

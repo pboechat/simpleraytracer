@@ -72,6 +72,16 @@ public:
 		mCurrentRadius = radius * srt_max(transform.scale[0][0], srt_max(transform.scale[1][1], transform.scale[2][2]));
 	}
 
+	inline Vector3F GetCenter() const
+	{
+		return mCurrentCenter;
+	}
+
+	inline float GetRadius() const
+	{
+		return mCurrentRadius;
+	}
+
 private:
 	Vector3F mCurrentCenter;
 	float mCurrentRadius;

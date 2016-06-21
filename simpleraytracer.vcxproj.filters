@@ -181,4 +181,9 @@
       <Filter>Scenes</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="scenes\scene4.xml">
+      <Filter>Scenes</Filter>
+    </Xml>
+  </ItemGroup>
 </Project>

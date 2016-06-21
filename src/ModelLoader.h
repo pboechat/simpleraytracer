@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cassert>
+#include <stdexcept>
 
 #include "Scene.h"
 #include "Mesh.h"
@@ -13,18 +15,28 @@ using namespace TinyObjLoader;
 
 struct ModelLoader
 {
-	static void LoadObj(const std::string& fileName, Scene& scene)
+	static std::unique_ptr<Mesh> LoadObj(const std::string& fileName)
 	{
 		std::vector<shape_t> shapes;
 
-		TinyObjLoader::LoadObj(shapes, fileName.c_str());
+		auto errorStr = TinyObjLoader::LoadObj(shapes, fileName.c_str());
+		if (!errorStr.empty())
+		{
+			throw std::runtime_error("[TinyObjLoader] " + errorStr);
+		}
 
+		std::unique_ptr<Mesh> mesh(new Mesh());
+		unsigned int offset = 0;
 		for (unsigned int i = 0; i < shapes.size(); i++)
 		{
 			shape_t& shape = shapes[i];
-			std::shared_ptr<Mesh> mesh(new Mesh());
 
-			mesh->indices = shape.mesh.indices;
+			assert(shape.mesh.indices.size() % 3 == 0);
+
+			for (unsigned int j = 0; j < shape.mesh.indices.size(); j++)
+			{
+				mesh->indices.push_back(offset + shape.mesh.indices[j]);
+			}
 
 			for (unsigned int j = 0; j < shape.mesh.positions.size(); j += 3)
 			{
@@ -41,8 +53,10 @@ struct ModelLoader
 				mesh->uvs.push_back(Vector2F(shape.mesh.texcoords[j], shape.mesh.texcoords[j + 1]));
 			}
 
-			scene.AddSceneObject(std::dynamic_pointer_cast<SceneObject>(mesh));
+			offset += mesh->vertices.size();
 		}
+
+		return mesh;
 	}
 
 private:

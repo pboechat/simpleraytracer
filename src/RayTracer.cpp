@@ -71,7 +71,7 @@ RayTracer::RayTracer() :
 	mPBOSupported(false),
 	mpTextureData(nullptr),
 	mpDepthBuffer(nullptr),
-	mDebug(false),
+	mDebug(true),
 	mCollectRayMetadata(false)
 {
 }
@@ -309,7 +309,7 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 				if (mCollectRayMetadata)
 					SetRayMetadataHitPoint(rRayMetadata, hit.point);
 
-				ColorRGBA currentColor = Shade(sceneObject, rRay, hit, rRayMetadata, iteration);
+				ColorRGBA currentColor = Reflectance(sceneObject, rRay, hit, rRayMetadata, iteration);
 
 				if (sceneObject->material.transparent)
 				{
@@ -323,42 +323,41 @@ ColorRGBA RayTracer::TraceRay(const Ray& rRay, RayMetadata& rRayMetadata, float*
 		}
 	}
 
-	return finalColor;
+	return mScene->ambientLight + finalColor;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
+ColorRGBA RayTracer::Reflectance(std::shared_ptr<SceneObject>& sceneObject, const Ray &rRay, const RayHit& rHit, RayMetadata& rRayMetadata, unsigned int iteration) const
 {
 	auto& rMaterial = sceneObject->material;
 	const auto& camera = mScene->GetCamera();
 
-	ColorRGBA color = SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT * rMaterial.ambientColor;
-
+	ColorRGBA color;
 	Vector3F viewerDirection = (rRay.origin - rHit.point).Normalized();
 	const Vector3F& rNormal = rHit.normal;
 
 	for (unsigned int j = 0; j < mScene->NumberOfLights(); j++)
 	{
-		const std::unique_ptr<Light>& light = mScene->GetLight(j);
+		const auto& light = mScene->GetLight(j);
 
 		float distanceToLight = -1;
-		Vector3F lightDirection;
+		Vector3F directionToLight;
 		if (srt_is(light, DirectionalLight))
 		{
-			lightDirection = srt_ptr_cast(light, DirectionalLight)->direction;
+			directionToLight = -srt_dynPtrCast(light, DirectionalLight)->direction;
 		}
 		else if (srt_is(light, PointLight))
 		{
-			Vector3F lightPosition = srt_ptr_cast(light, PointLight)->position;
-			lightDirection = (lightPosition - rHit.point).Normalized();
-			distanceToLight = lightPosition.Distance(rHit.point);
+			directionToLight = (srt_dynPtrCast(light, PointLight)->position - rHit.point);
+			distanceToLight = directionToLight.Length();
+			directionToLight /= distanceToLight;
 		}
 		else 
 		{
 			throw std::runtime_error("unimplemented light type");
 		}
 
-		Ray shadowRay(rHit.point, lightDirection);
+		Ray shadowRay(rHit.point, directionToLight);
 		if (IsLightBlocked(shadowRay, distanceToLight, sceneObject))
 		{
 			continue;
@@ -370,11 +369,11 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 			diffuseColor *= rMaterial.texture->Sample(rHit.uv);
 		}
 
-		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *light, lightDirection, viewerDirection, rNormal);
+		ColorRGBA colorContribution = BlinnPhong(diffuseColor, rMaterial.specularColor, rMaterial.shininess, *light, directionToLight, viewerDirection, rNormal);
 
 		if (srt_is(light, PointLight))
 		{
-			float distanceAttenuation = 1.0f / srt_max(srt_ptr_cast(light, PointLight)->attenuation * (distanceToLight * distanceToLight), 1);
+			float distanceAttenuation = 1.0f / (srt_dynPtrCast(light, PointLight)->attenuation * distanceToLight);
 			colorContribution *= distanceAttenuation;
 		}
 
@@ -451,7 +450,6 @@ bool RayTracer::IsLightBlocked(const Ray& rShadowRay, float distanceToLight, std
 					return true;
 				}
 			}
-
 		}
 	}
 
@@ -459,21 +457,17 @@ bool RayTracer::IsLightBlocked(const Ray& rShadowRay, float distanceToLight, std
 }
 
 //////////////////////////////////////////////////////////////////////////
-ColorRGBA RayTracer::BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const ColorRGBA& rMaterialSpecularColor, float materialShininess, const Light& rLight, const Vector3F& rLightDirection, const Vector3F& rViewerDirection, const Vector3F& rNormal) const
+ColorRGBA RayTracer::BlinnPhong(const ColorRGBA& rMaterialDiffuseColor, const ColorRGBA& rMaterialSpecularColor, float materialShininess, const Light& rLight, const Vector3F& L, const Vector3F& V, const Vector3F& N) const
 {
-	float diffuseAttenuation = max(rNormal.Dot(rViewerDirection), 0);
-
-	ColorRGBA diffuseContribution = rLight.intensity * rLight.diffuseColor * rMaterialDiffuseColor * diffuseAttenuation;
-	
-	ColorRGBA specularContribution;
-	if (diffuseAttenuation > 0)
+	float NdotL = max(N.Dot(L), 0);
+	ColorRGBA specular;
+	if (NdotL > 0)
 	{
-		Vector3F lightReflectionDirection = (-rLightDirection).Reflection(rNormal).Normalized();
-		float specularAttenuation = pow(max(lightReflectionDirection.Dot(rViewerDirection), 0), materialShininess);
-		specularContribution = rLight.intensity * rLight.specularColor * rMaterialSpecularColor * specularAttenuation;
+		Vector3F H = (L + V).Normalized();
+		float NdotH = N.Dot(H);
+		specular = rLight.intensity * rLight.specularColor * rMaterialSpecularColor * pow(max(NdotH, 0), materialShininess);
 	}
-
-	return (diffuseContribution + specularContribution);
+	return (rLight.intensity * rLight.diffuseColor * rMaterialDiffuseColor * NdotL + specular);
 }
 
 

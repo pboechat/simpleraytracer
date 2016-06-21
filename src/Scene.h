@@ -7,10 +7,13 @@
 #include "Camera.h"
 #include "Light.h"
 #include "SceneObject.h"
+#include "ColorRGBA.h"
 
 class Scene
 {
 public:
+	ColorRGBA ambientLight;
+
 	Scene() :
 	  mCamera(nullptr)
 	{
@@ -80,8 +83,8 @@ public:
 
 private:
 	std::unique_ptr<Camera> mCamera;
-	std::vector<std::unique_ptr<Light> > mLights;
-	std::vector<std::shared_ptr<SceneObject> > mSceneObjects;
+	std::vector<std::unique_ptr<Light>> mLights;
+	std::vector<std::shared_ptr<SceneObject>> mSceneObjects;
 
 };
 

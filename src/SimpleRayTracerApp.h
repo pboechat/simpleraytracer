@@ -27,7 +27,6 @@ public:
 	static const unsigned int SCREEN_HEIGHT;
 	static const unsigned int BYTES_PER_PIXEL;
 	static const ColorRGBA CLEAR_COLOR;
-	static const ColorRGBA GLOBAL_AMBIENT_LIGHT;
 
 	inline static SimpleRayTracerApp* GetInstance()
 	{

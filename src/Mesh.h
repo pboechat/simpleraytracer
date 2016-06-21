@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <climits>
 
 #include "SceneObject.h"
 #include "Vector2F.h"
@@ -41,9 +42,6 @@ public:
 
 	void CreateCache()
 	{
-		//cachedNormals.clear();
-		//cachedVertices.clear();
-
 		cachedVertices.resize(vertices.size());
 		cachedNormals.resize(normals.size());
 		for (unsigned int i = 0; i < indices.size(); i += 3)
@@ -69,6 +67,7 @@ public:
 			return false;
 		}
 
+		float t = FLT_MAX;
 		for (unsigned int i = 0; i < indices.size(); i += 3)
 		{
 			unsigned int i1 = indices[i];
@@ -79,9 +78,10 @@ public:
 			const Vector3F& v2 = cachedVertices[i2];
 			const Vector3F& v3 = cachedVertices[i3];
 
-			float u, v, t;
-			if (BackFaceCullTriangleIntersection(rRay, v1, v2, v3, &u, &v, &t))
+			float u, v, newT;
+			if (BackFaceCullTriangleIntersection(rRay, v1, v2, v3, u, v, newT) && newT < t)
 			{
+				t = newT;
 				rHit.point = rRay.origin + t * rRay.direction;
 
 				float w = (1 - u - v);
@@ -99,7 +99,7 @@ public:
 					const Vector3F& rEdge1 = (v2 - v1);
 					const Vector3F& rEdge2 = (v3 - v1);
 
-					rHit.normal = rEdge1.Cross(rEdge2);
+					rHit.normal = rEdge1.Cross(rEdge2).Normalized();
 				}
 
 				if (uvs.size() > 0)
@@ -109,16 +109,13 @@ public:
 					const Vector2F& rUV3 = uvs[i3];
 					rHit.uv = w * rUV1 + u * rUV2 + v * rUV3;
 				}
-
-				return true;
 			}
 		}
-
-		return false;
+		return t != FLT_MAX;
 	}
 
 private:
-	bool BackFaceCullTriangleIntersection(const Ray& rRay, const Vector3F& rP1, const Vector3F& rP2, const Vector3F& rP3, float* u, float* v, float* t) const
+	bool BackFaceCullTriangleIntersection(const Ray& rRay, const Vector3F& rP1, const Vector3F& rP2, const Vector3F& rP3, float& u, float& v, float& t) const
 	{
 		Vector3F rEdge1 = (rP2 - rP1);
 		Vector3F rEdge2 = (rP3 - rP1);
@@ -134,29 +131,29 @@ private:
 
 		Vector3F rTVec = (rRay.origin - rP1);
 
-		*u = rTVec.Dot(rPVec);
+		u = rTVec.Dot(rPVec);
 
-		if (*u < 0.0f || *u > determinant)
+		if (u < 0.0f || u > determinant)
 		{
 			return false;
 		}
 
 		Vector3F rQVec = rTVec.Cross(rEdge1);
 
-		*v = rRay.direction.Dot(rQVec);
+		v = rRay.direction.Dot(rQVec);
 
-		if (*v < 0.0f || *u + *v > determinant)
+		if (v < 0.0f || u + v > determinant)
 		{
 			return false;
 		}
 
-		*t = rEdge2.Dot(rQVec);
+		t = rEdge2.Dot(rQVec);
 
 		float inverseDeterminant = 1.0f / determinant;
 
-		*u *= inverseDeterminant;
-		*v *= inverseDeterminant;
-		*t *= inverseDeterminant;
+		u *= inverseDeterminant;
+		v *= inverseDeterminant;
+		t *= inverseDeterminant;
 
 		return true;
 	}

@@ -7,7 +7,7 @@
 #define srt_PI 3.14159265359f
 #define srt_halfPI 1.57079632679f
 
-#define srt_ptr_cast(x, T) dynamic_cast<T*>(x.get())
+#define srt_dynPtrCast(x, T) dynamic_cast<T*>(x.get())
 #define srt_is(x, T) dynamic_cast<T*>(x.get()) != 0
 
 #define srt_boolStr(x) ((x) ? "true" : "false")
@@ -23,6 +23,8 @@
 			(a) = (b); \
 			(b) = tmp; \
 		}
+
+#define srt_lerp(x, y, a) (x * a + y * (1 - a))
 
 #if defined(__gl_h_) && defined(__glu_h__) && defined(_EXCEPTION_)
 

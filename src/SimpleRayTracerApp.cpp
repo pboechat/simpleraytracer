@@ -28,15 +28,14 @@
 SimpleRayTracerApp* SimpleRayTracerApp::s_mpInstance = 0;
 const char* SimpleRayTracerApp::WINDOW_TITLE = "simpleraytracer";
 const char* SimpleRayTracerApp::WINDOW_CLASS_NAME = "simpleraytracerWindowClass";
-const unsigned int SimpleRayTracerApp::SCREEN_WIDTH = 1024;
-const unsigned int SimpleRayTracerApp::SCREEN_HEIGHT = 768;
+const unsigned int SimpleRayTracerApp::SCREEN_WIDTH = 640;
+const unsigned int SimpleRayTracerApp::SCREEN_HEIGHT = 480;
 const unsigned int SimpleRayTracerApp::BYTES_PER_PIXEL = 4;
 const unsigned int SimpleRayTracerApp::COLOR_BUFFER_BITS = 32;
 const unsigned int SimpleRayTracerApp::DEPTH_BUFFER_BITS = 32;
 const unsigned int SimpleRayTracerApp::HAS_ALPHA = 0;
 const PIXELFORMATDESCRIPTOR SimpleRayTracerApp::PIXEL_FORMAT_DESCRIPTOR = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, COLOR_BUFFER_BITS, 0, 0, 0, 0, 0, 0,	HAS_ALPHA, 0, 0, 0, 0, 0, 0, DEPTH_BUFFER_BITS, 0, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 };
 const ColorRGBA SimpleRayTracerApp::CLEAR_COLOR(0, 0, 0, 1);
-const ColorRGBA SimpleRayTracerApp::GLOBAL_AMBIENT_LIGHT(0.2f, 0.2f, 0.2f, 1);
 const float SimpleRayTracerApp::ANGLE_INCREMENT = 0.05f;
 const float SimpleRayTracerApp::CAMERA_PITCH_LIMIT = 1.0472f; // 60 deg.
 const float SimpleRayTracerApp::CAMERA_MOVE_SPEED = 10.0f;

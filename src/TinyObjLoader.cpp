@@ -645,7 +645,7 @@ std::string LoadObj(std::vector<shape_t>& shapes, const char* filename)
 		// group name
 		if (token[0] == 'g' && isSpace((token[1])))
 		{
-			printf("group\n");
+			//printf("group\n");
 			// flush previous face group.
 			shape_t shape;
 			bool ret = exportFaceGroupToShape(shape, v, vn, vt, faceGroup, material, name);
