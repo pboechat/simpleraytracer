@@ -1,6 +1,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
+#include <cassert>
 #include <windows.h>
 #include <GL/GL.h>
 #include <GL/GLU.h>
@@ -152,6 +153,10 @@ void OpenGLRenderer::RenderRay()
 	auto* pRay = mpRayToDebug;
 	while (pRay != nullptr)
 	{
+		Vector3F end = pRay->end;
+		bool missed = end.x() == -1;
+		if (missed)
+			end = pRay->start + (pRay->direction * 100000.0f);
 		if (pRay->isReflection)
 		{
 			glColor4f(0, 1, 1, 1);
@@ -160,20 +165,20 @@ void OpenGLRenderer::RenderRay()
 		{
 			glColor4f(0.8f, 0.8f, 0.8f, 1);
 		}
+		else if (missed)
+		{
+			glColor4f(0.333f, 0.333f, 0.333f, 1);
+		}
 		else
 		{
 			glColor4f(1, 1, 0, 1);
 		}
-
 		glBegin(GL_LINES);
 		glVertex3fv(&pRay->start[0]);
-		Vector3F end = pRay->end;
-		if (end.x() == -1)
-			end = pRay->start + (pRay->direction * 100000.0f);
 		glVertex3fv(&end[0]);
 		glEnd();
-
 		pRay = pRay->next;
+		assert(!missed || (missed && pRay == nullptr));
 	}
 }
 

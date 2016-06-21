@@ -1,5 +1,6 @@
 #include <windowsx.h>
 #include <string>
+#include <cassert>
 #include <stdexcept>
 
 #include "Common.h"
@@ -387,7 +388,7 @@ void SimpleRayTracerApp::MoveDebugRayLeft(float deltaTime)
 		return;
 	}
 
-	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH);
+	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH - 1);
 	UpdateDebugRay();
 }
 
@@ -399,8 +400,7 @@ void SimpleRayTracerApp::MoveDebugRayRight(float deltaTime)
 		return;
 	}
 
-	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH);
-	unsigned int rayIndex = static_cast<unsigned int>(mDebugRayCoords.y()) * SCREEN_WIDTH + static_cast<unsigned int>(mDebugRayCoords.x());
+	mDebugRayCoords.x() = srt_clamp(mDebugRayCoords.x() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_WIDTH - 1);
 	UpdateDebugRay();
 }
 
@@ -412,7 +412,7 @@ void SimpleRayTracerApp::MoveDebugRayUp(float deltaTime)
 		return;
 	}
 
-	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT);
+	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() + deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT - 1);
 	UpdateDebugRay();
 }
 
@@ -424,15 +424,17 @@ void SimpleRayTracerApp::MoveDebugRayDown(float deltaTime)
 		return;
 	}
 	
-	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT);
+	mDebugRayCoords.y() = srt_clamp(mDebugRayCoords.y() - deltaTime * DEBUG_RAY_MOVE_SPEED, 0, SCREEN_HEIGHT - 1);
 	UpdateDebugRay();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SimpleRayTracerApp::UpdateDebugRay()
 {
-	unsigned int rayIndex = static_cast<unsigned int>(mDebugRayCoords.y()) * SCREEN_WIDTH + static_cast<unsigned int>(mDebugRayCoords.x());
-	std::cout << "rayIndex: " << rayIndex << std::endl;
+	assert(mRenderer == mOpenGLRenderer);
+	auto rayIndex = static_cast<unsigned int>(mDebugRayCoords.y()) * SCREEN_WIDTH + static_cast<unsigned int>(mDebugRayCoords.x());
+	// DEBUG:
+	//std::cout << "rayIndex: " << rayIndex << std::endl;
 	mOpenGLRenderer->SetDebugRay(mRayTracer->GetRaysMetadata()[rayIndex]);
 }
 

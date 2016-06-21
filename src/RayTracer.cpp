@@ -386,24 +386,26 @@ ColorRGBA RayTracer::Shade(std::shared_ptr<SceneObject>& sceneObject, const Ray 
 		float newDepth = camera->zFar();
 		RayMetadata* pReflectionRayMetadata = new RayMetadata();
 		pReflectionRayMetadata->start = reflectionRay.origin;
+		pReflectionRayMetadata->direction = reflectionDirection;
 		pReflectionRayMetadata->isReflection = true;
 		rRayMetadata.next = pReflectionRayMetadata;
 		color += rMaterial.reflection * TraceRay(reflectionRay, *pReflectionRayMetadata, &newDepth, iteration + 1, sceneObject);
 	}
 	else if (rMaterial.refraction > 0)
 	{
-		Vector3F& rVt = viewerDirection.Dot(rNormal) * rNormal - viewerDirection;
+		Vector3F rVt = viewerDirection.Dot(rNormal) * rNormal - viewerDirection;
 		float sinI = rVt.Length();
 		float sinT = rMaterial.refraction * sinI;
 		float cosT = sqrt(1.0f - (sinT * sinT));
-		Vector3F& rT = (1.0f / rVt.Length()) * rVt;
-		Vector3F& rRefractionDirection = sinT * rT + cosT * (-rNormal);
+		Vector3F rT = (1.0f / rVt.Length()) * rVt;
+		Vector3F rRefractionDirection = sinT * rT + cosT * (-rNormal);
 
 		Ray refractionRay(rHit.point, rRefractionDirection);
 		float newDepth = camera->zFar();
 		RayMetadata* pRefractionRayMetadata = new RayMetadata();
-		pRefractionRayMetadata->isRefraction = true;
 		pRefractionRayMetadata->start = refractionRay.origin;
+		pRefractionRayMetadata->direction = rRefractionDirection;
+		pRefractionRayMetadata->isRefraction = true;
 		rRayMetadata.next = pRefractionRayMetadata;
 		color = color.Blend(TraceRay(refractionRay, *pRefractionRayMetadata, &newDepth, iteration + 1, sceneObject));
 	}
