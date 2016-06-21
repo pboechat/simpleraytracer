@@ -1,6 +1,8 @@
 #ifndef RAYMETADATA_H_
 #define RAYMETADATA_H_
 
+#include <memory>
+
 #include "Vector3F.h"
 
 struct RayMetadata
@@ -10,23 +12,14 @@ struct RayMetadata
 	Vector3F end;
 	bool isReflection;
 	bool isRefraction;
-	RayMetadata* next;
+	std::unique_ptr<RayMetadata> next;
 
 	RayMetadata() :
 		end(-1, -1, -1),
-		next(0),
+		next(nullptr),
 		isReflection(false),
 		isRefraction(false)
 	{
-	}
-
-	~RayMetadata()
-	{
-		if (next != 0)
-		{
-			delete next;
-			next = 0;
-		}
 	}
 
 };

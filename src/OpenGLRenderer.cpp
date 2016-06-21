@@ -177,7 +177,7 @@ void OpenGLRenderer::RenderRay()
 		glVertex3fv(&pRay->start[0]);
 		glVertex3fv(&end[0]);
 		glEnd();
-		pRay = pRay->next;
+		pRay = pRay->next.get();
 		assert(!missed || (missed && pRay == nullptr));
 	}
 }
