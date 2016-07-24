@@ -1,6 +1,6 @@
 # simpleraytracer
 
-**simpleraytracer** is a simple raytracer implementation in C++ using Win32 and OpenGL.
+**simpleraytracer** is a simple Whitted-style raytracer implementation in C++ using Win32 and OpenGL.
 
 It features:
 
