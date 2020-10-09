@@ -1,8 +1,11 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-#include <memory>
 #include <windows.h>
+
+#include <memory>
+#include <string>
+
 #include <GL/GL.h>
 #include <GL/GLU.h>
 #include "glext.h"
@@ -12,9 +15,6 @@
 #include "RayTracer.h"
 #include "OpenGLRenderer.h"
 #include "ColorRGBA.h"
-
-//////////////////////////////////////////////////////////////////////////
-int main(unsigned int argc, const char** argv);
 
 //////////////////////////////////////////////////////////////////////////
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -33,13 +33,15 @@ public:
 		return s_mpInstance;
 	}
 
-	int Run(unsigned int argc, const char** argv);
+	SimpleRayTracerApp();
+	~SimpleRayTracerApp();
+
+	int Run();
 
 	void EnableRayDebugging();
 	void DisableRayDebugging();
 	void Close();
 
-	friend int main(unsigned int argc, const char** argv);
 	friend LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
@@ -62,7 +64,7 @@ private:
 	HDC mDeviceContextHandle;
 	int mPixelFormat;
 	HGLRC mOpenGLRenderingContextHandle;
-	const char* mpSceneFileName;
+	std::string mpSceneFileName;
 	std::shared_ptr<Scene> mScene;
 	std::shared_ptr<RayTracer> mRayTracer;
 	std::shared_ptr<OpenGLRenderer> mOpenGLRenderer;
@@ -75,9 +77,6 @@ private:
 	float mCameraPhi;
 	float mCameraTheta;
 	Vector2F mDebugRayCoords;
-
-	SimpleRayTracerApp();
-	~SimpleRayTracerApp();
 
 	void LoadSceneFromXML();
 	void Dispose();

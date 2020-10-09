@@ -13,8 +13,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	static void Tokenize(const std::string& rString, const std::string& rDelimiter, std::vector<std::string>& rTokens)
 	{
-		unsigned int currentPosition = 0;
-		unsigned int nextPosition = std::string::npos;
+		size_t currentPosition = 0;
+		size_t nextPosition = std::string::npos;
 
 		while (currentPosition != std::string::npos)
 		{
@@ -51,7 +51,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	static void Replace(std::string& rString, const std::string& rFrom, const std::string& rTo)
 	{
-		unsigned int startPosition;
+		size_t startPosition;
 
 		while ((startPosition = rString.find(rFrom)) != std::string::npos)
 		{
@@ -62,7 +62,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	static bool StartsWith(const std::string& rString1, const std::string& rString2)
 	{
-		unsigned int size = rString2.size();
+		size_t size = rString2.size();
 		if (rString1.size() < size)
 		{
 			return false;

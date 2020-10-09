@@ -1,8 +1,10 @@
+#include <windows.h>
+
 #include "SimpleRayTracerApp.h"
 
 //////////////////////////////////////////////////////////////////////////
-int main(unsigned int argc, const char** argv)
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	SimpleRayTracerApp application;
-	return application.Run(argc, argv);
+	return application.Run();
 }

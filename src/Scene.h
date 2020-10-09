@@ -53,12 +53,12 @@ public:
 
 	inline unsigned int NumberOfLights() const
 	{
-		return mLights.size();
+		return static_cast<unsigned int>(mLights.size());
 	}
 
 	inline unsigned int NumberOfSceneObjects() const
 	{
-		return mSceneObjects.size();
+		return static_cast<unsigned int>(mSceneObjects.size());
 	}
 
 	inline const std::unique_ptr<Light>& GetLight(unsigned int i) const

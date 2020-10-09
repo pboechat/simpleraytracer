@@ -16,9 +16,18 @@
 #include "PointLight.h"
 #include "TextureLoader.h"
 #include "SceneLoader.h"
+#include "StringUtils.h"
 
-#define srt_win32Assert(resultHandle, errorMessage) \
-	if (resultHandle == 0) \
+#define Win32Assert(resultHandle, errorMessage) \
+	if ((resultHandle) == 0) \
+	{ \
+		MessageBox(NULL, #errorMessage, WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION); \
+		Dispose(); \
+		exit(EXIT_FAILURE); \
+	} \
+
+#define Assert(result, errorMessage) \
+	if (!(result)) \
 	{ \
 		MessageBox(NULL, #errorMessage, WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION); \
 		Dispose(); \
@@ -49,7 +58,6 @@ SimpleRayTracerApp::SimpleRayTracerApp() :
 	mDeviceContextHandle(0),
 	mPixelFormat(0),
 	mOpenGLRenderingContextHandle(0),
-	mpSceneFileName(0),
 	mScene(nullptr),
 	mRayTracer(0),
 	mOpenGLRenderer(0),
@@ -101,9 +109,14 @@ void SimpleRayTracerApp::DisableRayDebugging()
 }
 
 //////////////////////////////////////////////////////////////////////////
-int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
+int SimpleRayTracerApp::Run()
 {
-	if (argc < 2)
+	std::string commandLine (GetCommandLine());
+
+	std::vector<std::string> tokens;
+	StringUtils::Tokenize(commandLine, " ", tokens);
+
+	if (tokens.size() < 2)
 	{
 		MessageBox(0, "no scene file specified", WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		exit(EXIT_FAILURE);
@@ -111,18 +124,24 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 
 	mApplicationHandle = GetModuleHandle(0);
 
-	srt_win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
-	srt_win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, mApplicationHandle, NULL)), "CreateWindow failed");
-	srt_win32Assert((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
-	srt_win32Assert((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
-	srt_win32Assert(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
-	srt_win32Assert((mOpenGLRenderingContextHandle = wglCreateContext(mDeviceContextHandle)), "wglCreateContext() failed");
-	srt_win32Assert(wglMakeCurrent(mDeviceContextHandle, mOpenGLRenderingContextHandle), "wglMakeCurrent() failed");
+	Win32Assert(RegisterClassEx(&CreateWindowClass()), "RegisterClassEx failed");
+	Win32Assert((mWindowHandle = CreateWindow(WINDOW_CLASS_NAME, WINDOW_TITLE, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN), CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT, NULL, NULL, mApplicationHandle, NULL)), "CreateWindow failed");
+	Win32Assert((mDeviceContextHandle = GetDC(mWindowHandle)), "GetDC() failed");
+	Win32Assert((mPixelFormat = ChoosePixelFormat(mDeviceContextHandle, &PIXEL_FORMAT_DESCRIPTOR)), "ChoosePixelFormat() failed");
+	Win32Assert(SetPixelFormat(mDeviceContextHandle, mPixelFormat, &PIXEL_FORMAT_DESCRIPTOR), "SetPixelFormat() failed");
+	Win32Assert((mOpenGLRenderingContextHandle = wglCreateContext(mDeviceContextHandle)), "wglCreateContext() failed");
+	Win32Assert(wglMakeCurrent(mDeviceContextHandle, mOpenGLRenderingContextHandle), "wglMakeCurrent() failed");
 	ShowWindow(mWindowHandle, SW_SHOW);
 	SetForegroundWindow(mWindowHandle);
 	SetFocus(mWindowHandle);
 
-	mpSceneFileName = argv[1]; 
+	mpSceneFileName = tokens[1];
+
+	bool onlyOneFrame = false;
+	if (tokens.size() >= 3)
+	{
+		onlyOneFrame = atoi(tokens[2].c_str()) != 0;
+	}
 
 	mRayTracer = std::shared_ptr<RayTracer>(new RayTracer());
 	mOpenGLRenderer = std::shared_ptr<OpenGLRenderer>(new OpenGLRenderer());
@@ -148,40 +167,44 @@ int SimpleRayTracerApp::Run(unsigned int argc, const char** argv)
 				DispatchMessage(&message);
 			}
 		}
-		else
+
+		try
 		{
-			try
+			auto start = std::chrono::system_clock::now().time_since_epoch();
+			if (mLoadScene)
 			{
-				auto start = std::chrono::system_clock::now().time_since_epoch();
-				if (mLoadScene)
-				{
-					LoadSceneFromXML();
-					mRayTracer->SetScene(mScene);
-					mOpenGLRenderer->SetScene(mScene);
-					mLoadScene = false;
-				}
-				mScene->Update();
-				mRenderer->Render();
-				auto end = std::chrono::system_clock::now().time_since_epoch();
-				float deltaTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0f);
-				ProcessKeys(deltaTime);
-				memset(mPressedKeys, 0, sizeof(bool) * 0xFF);
-				std::stringstream stream;
-				stream << std::fixed << std::setprecision(5) << WINDOW_TITLE << " @ fps: " << (1 / deltaTime);
-				SetWindowText(mWindowHandle, stream.str().c_str());
-				SwapBuffers(mDeviceContextHandle);
+				LoadSceneFromXML();
+				mRayTracer->SetScene(mScene);
+				mOpenGLRenderer->SetScene(mScene);
+				mLoadScene = false;
 			}
-			catch (std::runtime_error& rException)
+			mScene->Update();
+			mRenderer->Render();
+			auto end = std::chrono::system_clock::now().time_since_epoch();
+			auto deltaTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0f);
+			ProcessKeys(deltaTime);
+			memset(mPressedKeys, 0, sizeof(mPressedKeys));
+			std::stringstream stream;
+			stream << std::fixed << std::setprecision(5) << WINDOW_TITLE << " @ fps: " << (1 / deltaTime);
+			SetWindowText(mWindowHandle, stream.str().c_str());
+			SwapBuffers(mDeviceContextHandle);
+
+			if (onlyOneFrame)
 			{
-				MessageBox(mWindowHandle, rException.what(), WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
-				DestroyWindow(mWindowHandle);
+				mRunning = false;
 			}
+		}
+		catch (std::runtime_error& rException)
+		{
+			MessageBox(mWindowHandle, rException.what(), WINDOW_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		}
 	}
 
+	DestroyWindow(mWindowHandle);
+
 	Dispose();
 
-	srt_win32Assert(UnregisterClass(WINDOW_CLASS_NAME, mApplicationHandle), "UnregisterClass() failed");
+	Assert(UnregisterClass(WINDOW_CLASS_NAME, mApplicationHandle), "UnregisterClass() failed");
 
 	mDeviceContextHandle = 0;
 	mWindowHandle = 0;
@@ -219,8 +242,8 @@ void SimpleRayTracerApp::Dispose()
 	
 	if (mOpenGLRenderingContextHandle)
 	{
-		srt_win32Assert(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
-		srt_win32Assert(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
+		Win32Assert(wglMakeCurrent(NULL, NULL), "wglMakeCurrent() failed");
+		Win32Assert(wglDeleteContext(mOpenGLRenderingContextHandle), "wglDeleteContext() failed")
 		mOpenGLRenderingContextHandle = 0;
 	}
 }
@@ -590,10 +613,10 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		PostQuitMessage(0);
 		break;
 	case WM_KEYDOWN:
-		SimpleRayTracerApp::s_mpInstance->KeyDown(wParam);
+		SimpleRayTracerApp::s_mpInstance->KeyDown(static_cast<unsigned int>(wParam));
 		break;
 	case WM_KEYUP:
-		SimpleRayTracerApp::s_mpInstance->KeyUp(wParam);
+		SimpleRayTracerApp::s_mpInstance->KeyUp(static_cast<unsigned int>(wParam));
 		break;
 	case WM_LBUTTONDOWN:
 		x = GET_X_LPARAM(lParam);

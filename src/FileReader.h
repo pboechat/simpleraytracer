@@ -33,7 +33,7 @@ public:
 			if (file == 0)
 				throw std::runtime_error("file not found: " + rFileName);
 			fseek(file, 0, SEEK_END);
-			auto size = ftell(file);
+			size_t size = ftell(file);
 			fileSize = size;
 			rewind(file);
 			if (size == 0)

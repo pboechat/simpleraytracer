@@ -203,7 +203,7 @@ updateVertex(
 		texcoords.push_back(in_texcoords[2 * i.vt_idx + 1]);
 	}
 
-	unsigned int idx = positions.size() / 3 - 1;
+	unsigned int idx = static_cast<unsigned int>(positions.size()) / 3 - 1;
 	vertexCache[i] = idx;
 	return idx;
 }
@@ -472,7 +472,7 @@ std::string LoadMtl (
 
 		if (_space)
 		{
-			int len = _space - token;
+			auto len = _space - token;
 			std::string key(token, len);
 			std::string value = _space + 1;
 			material.unknown_parameter.insert(std::pair<std::string, std::string>(key, value));
@@ -594,9 +594,9 @@ std::string LoadObj(std::vector<shape_t>& shapes, const char* filename)
 
 			while (!isNewLine(token[0]))
 			{
-				vertex_index vi = parseTriple(token, v.size() / 3, vn.size() / 3, vt.size() / 2);
+				vertex_index vi = parseTriple(token, static_cast<int>(v.size()) / 3, static_cast<int>(vn.size()) / 3, static_cast<int>(vt.size()) / 2);
 				face.push_back(vi);
-				int n = strspn(token, " \t\r");
+				int n = static_cast<int>(strspn(token, " \t\r"));
 				token += n;
 			}
 

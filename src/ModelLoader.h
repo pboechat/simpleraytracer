@@ -53,7 +53,7 @@ struct ModelLoader
 				mesh->uvs.push_back(Vector2F(shape.mesh.texcoords[j], shape.mesh.texcoords[j + 1]));
 			}
 
-			offset += mesh->vertices.size();
+			offset += static_cast<unsigned int>(mesh->vertices.size());
 		}
 
 		return mesh;
